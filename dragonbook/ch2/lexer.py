@@ -1,4 +1,7 @@
 #!/usr/bin/python
+#
+# Python implemetation of the java example lexer in Dragonbook 2.5.6: 'A Lexical Analyzer'
+#
 
 import sys
 

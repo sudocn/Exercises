@@ -3,6 +3,7 @@
 
 from FA import NFA, DFA
 from NFA2DFA import NFA2DFA
+from transtable import load_default
 import unittest
 
 t3_26 = \
@@ -157,13 +158,13 @@ def SimDFA(dfa, x):
 class testSimNFA(unittest.TestCase):
     def runTest(self):
         #nfa = NFA(t3_29)
-        nfa = NFA(t3_30)
+        nfa = NFA(*load_default('t3_30'))
         self.assertTrue(SimNFA(nfa, "aabb"))
         nfa.draw()
 
 class testSimDFA(unittest.TestCase):
     def runTest(self):
-        nfa = NFA(t3_30)
+        nfa = NFA(*load_default('t3_30'))
         dfa = NFA2DFA(nfa)
         dfa.draw()
         #print "dfa:", dfa.start, dfa.accept

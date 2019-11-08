@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import yaml
-from graphviz import Digraph 
+from graphviz import Digraph
+from transtable import trans_table
 
 EMPTY = 'E'
 
@@ -54,38 +55,6 @@ def draw_graphviz(table, start, accept):
     # draw 
     g.view()
 
-def fa_parse(table):
-    '''
-    parse raw table (contains 'start', 'accept' info) to pure transition table .
-    '''
-    start = None
-    accept = []
-
-    for state in table.keys():
-        moves = table.pop(state) # moves should be a dict too
-        
-        # handle start/accept special keys
-        if 'start' in moves:
-            start = str(state)
-            moves.pop('start')
-            
-        if 'accept' in moves:
-            accept.append(str(state))
-            moves.pop('accept')
-
-        # stringfy and listfy moves
-        new_moves = {}
-        for k,v in moves.items():
-            if isinstance(v, list):
-                new_moves[str(k)] = [ str(x) for x in v ]
-            else:
-                new_moves[str(k)] = [ str(v) ]
-
-        # rebuild dict key
-        table[str(state)] = new_moves
-
-    return start, set(accept)
-
 def fa_volcabulary(table):
     '''
     get valcabulary (all possible input, not including E) from a table
@@ -97,26 +66,6 @@ def fa_volcabulary(table):
     res = set(v)
     return res - set(EMPTY)
 
-def fa_table(yaml_or_dict):
-    if isinstance(yaml_or_dict, str):
-        y = yaml.load(yaml_or_dict)
-    elif isinstance(yaml_or_dict, dict):
-        y = yaml_or_dict
-    else:
-        raise Exception("fa_table only accepts yaml or dict")
-    
-    #print yaml.dump(y)
-    print 'states:', y.keys()
-    print "-- y before parse --"
-    print y
-    #draw(y, 0, [3])
-
-    start, accept =  fa_parse(y)
-    print "-- y after parse --"
-    print y
-    print "start", start, "accept", accept
-
-    return y, start, accept
 
 trans = \
         '''
@@ -141,8 +90,8 @@ trans = \
 ################################################################################
 
 class FA(object):
-    def __init__(self, yaml_text):
-        self.table, self.start, self.accept = fa_table(yaml_text)
+    def __init__(self, table, start, accept):
+        self.table, self.start, self.accept = table, start, accept #trans_table(tab_name)
         self.volcabulary = fa_volcabulary(self.table)
 
     def draw(self):
@@ -294,7 +243,7 @@ class DFA(FA):
         self.trans[src_name][sym] = dst_name
 
     def conclude(self):
-        super(DFA, self).__init__(self.trans)
+        super(DFA, self).__init__(*trans_table(self.trans))
         
     #def draw(self):
     #    fa = FA(self.trans)

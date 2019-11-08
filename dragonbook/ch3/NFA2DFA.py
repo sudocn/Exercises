@@ -2,7 +2,6 @@
 #import yaml
 
 from FA import NFA, DFA
-import unittest
 
 t3_26 = \
 '''
@@ -122,10 +121,12 @@ def NFA2DFA(nfa):
     dfa.conclude()
     return dfa
 
+import unittest
+from transtable import load_default
 #fa_draw(NFA2DFA(NFA(t3_29)))
 class testNFA2DFA(unittest.TestCase):
     def runTest(self):
-        NFA2DFA(NFA(t3_29)).draw()
+        NFA2DFA(NFA(*load_default('t3_29'))).draw()
 
 if __name__ == "__main__":
     unittest.main()

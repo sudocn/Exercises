@@ -1,89 +1,9 @@
 #!/usr/bin/python
 #import yaml
 
-from FA import NFA, DFA
-from NFA2DFA import NFA2DFA
+from nfa import NFA
+from dfa import DFA
 from transtable import load_default
-import unittest
-
-t3_26 = \
-'''
-0: 
-  start:
-  E: [1,3]
-1:
-  a: 2
-2:
-  accept:
-  a: 2
-3:
-  b: 4
-4:
-  accept:
-  b: 4
-'''
-
-t3_29 = \
-'''
-0:
-  start:
-  a: [0,1]
-  b: 0
-1:
-  a: [1,2]
-  b: 1
-2:
-  a: 2
-  b: [2,3]
-  E: 0
-3:
-  accept:
-'''
-
-t3_30 =\
-'''
-0:
-  start:
-  E: 3
-  a: 1
-1:
-  E: 0
-  b: 2
-2: 
-  E: 1
-  b: 3
-3:
-  accept:
-  E: 2
-  a: 0
-'''
-
-t3_21 = \
-'''
-0:
-  start:
-  E: [1,7]
-1:
-  E: [2,4]
-2:
-  a: 3
-3:
-  E: 6
-4:
-  b: 5
-5:
-  E: 6
-6:
-  E: [1, 7]
-7:
-  a: 8
-8: 
-  b: 9
-9:
-  b: 10
-10:
-  accept:
-'''
 
 def SimNFA(nfa, x):
     '''
@@ -153,8 +73,7 @@ def SimDFA(dfa, x):
             print "no"
             return False
         
-
-#fa_draw(NFA2DFA(NFA(t3_29)))
+import unittest
 class testSimNFA(unittest.TestCase):
     def runTest(self):
         #nfa = NFA(t3_29)
@@ -165,7 +84,7 @@ class testSimNFA(unittest.TestCase):
 class testSimDFA(unittest.TestCase):
     def runTest(self):
         nfa = NFA(*load_default('t3_30'))
-        dfa = NFA2DFA(nfa)
+        dfa = DFA.from_nfa(nfa)
         dfa.draw()
         #print "dfa:", dfa.start, dfa.accept
         self.assertTrue(SimDFA(dfa, "aabb"))

@@ -82,7 +82,6 @@ trans = \
         '''
 
 
-
 ################################################################################
 #
 # NFA
@@ -137,126 +136,6 @@ class FA(object):
 class NFA(FA):
     pass
 
-################################################################################
-#
-# DFA
-#
-################################################################################
-
-class DState(object):
-    '''
-    Data structure for ONE DFA state
-    '''
-    def __init__(self, index, states=[], marked=False):
-        self.index = index
-        self.states = set(states)
-        self.name = chr(ord('A') + self.index)
-        self.marked = marked
-
-    def __str__(self):
-        return '{} {}'.format(self.name, sorted(self.states))
-
-class DFA(FA):
-    '''
-    Definite finite automata
-
-    after init, the DFA is not a full featured DFA, it is used a the input data structure for
-    NFA2DFA. 
-
-    User must call concolude() to make this class to acts normally
-    '''
-    
-    def __init__(self):
-        self.states = {}
-        self.index = 0
-        self.trans = {}
-
-    def __str__(self):
-        content = "======== DFA ========\n"
-        content += "states\n"
-        for k,v in self.states.items():
-            content += '{} : {}\n'.format(k,v)
-
-        content += "tansition\n"
-        for src in sorted(self.trans.keys()):
-            moves = self.trans[src]
-            content += '{} : {}\n'.format(src, ', '.join([k + '->' + v for k,v in moves.items() ]))
-
-        return content
-
-    def mark(self, Tset):
-        assert isinstance(Tset, set)
-        for k,v in self.states.items():
-            if v.states == Tset:
-                v.marked = True
-                return
-        raise Exception("e-cloure set {} not found, can not mark it".format(T)) 
-
-    def unmarked(self):
-        for k,v in self.states.items():
-            if not v.marked:
-                return v.states
-        return None
-
-    def addState(self, Tset, start=False, accept=False):
-        assert isinstance(Tset, set)
-        if self.hasState(Tset):
-            raise Exception("state {} already in states set".format(Tset))
-
-        st = DState(self.index, Tset)
-        self.states[self.index] = st
-
-        self.trans[st.name] = {}
-        if start:
-            self.trans[st.name]["start"] = ''
-        if accept:
-            self.trans[st.name]["accept"] = ''
-
-        print "  new State: {} {}".format(st.name, sorted(Tset))
-        self.index += 1
-
-    def _getState(self, Tset):
-        assert isinstance(Tset, set)
-        for k,v in self.states.items():
-            if Tset == v.states:
-                return v
-        return None
-
-    def hasState(self, Tset):
-        assert isinstance(Tset, set)
-        return self._getState(Tset) is not None
-
-    def stateName(self, Tset):
-        try:
-            return self._getState(Tset).name
-        except:
-            return 'NONAME'
-        
-    def addEdge(self, sym, src, dst):
-        src_name = self.stateName(src)
-        dst_name = self.stateName(dst)
-        print "  new Edge: {} {}-> {} ".format(src_name, sym, dst_name)
-
-        if src_name not in self.trans:
-            self.trans[src_name] = {}
-
-        self.trans[src_name][sym] = dst_name
-
-    def conclude(self):
-        super(DFA, self).__init__(*trans_table(self.trans))
-        
-    #def draw(self):
-    #    fa = FA(self.trans)
-    #    fa.draw()
-    def move(self, state, symbol):
-        if isinstance(state, set):
-            print state
-            raise Exception("Error: DFA move only start from exactly 1 state")
-
-        dest = super(DFA, self).move(state, symbol)
-        if len(dest) != 1:
-            raise Exception("Error: multi move path, not a DFA")
-        return list(dest)[0]
 
 '''
 states: A, B, C

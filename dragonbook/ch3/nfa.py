@@ -55,18 +55,6 @@ def draw_graphviz(table, start, accept):
     # draw 
     g.view()
 
-def fa_alphabet(table):
-    '''
-    get valcabulary (all possible input, not including E) from a table
-    '''
-    v = []
-    for s in table.values():
-        v.extend(s.keys())
-
-    res = set(v)
-    return res - set(EMPTY)
-
-
 trans = \
         '''
 0:
@@ -91,7 +79,18 @@ trans = \
 class FA(object):
     def __init__(self, table, start, accept):
         self.table, self.start, self.accept = table, start, accept #trans_table(tab_name)
-        self.alphabet = fa_alphabet(self.table)
+
+    @property
+    def alphabet(self):
+        '''
+        get alphabet (all possible input, not including E) from a table
+        '''
+        v = []
+        for s in self.table.values():
+            v.extend(s.keys())
+
+        res = set(v)
+        return res - set(EMPTY)
 
     def draw(self):
         draw_graphviz(self.table, self.start, self.accept)

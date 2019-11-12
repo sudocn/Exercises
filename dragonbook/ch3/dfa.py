@@ -129,7 +129,7 @@ class DFA(FA):
         '''
         print
         print "== Start NFA to DFA converting =="
-        print "volcabulary:", sorted(nfa.volcabulary)
+        print "alphabet:", sorted(nfa.alphabet)
 
         helper = DFAHelper()
         print "start:"
@@ -140,7 +140,7 @@ class DFA(FA):
             T = helper.unmarked()
             helper.mark(T)
             print "\nstate {} : {}".format(helper.stateName(T), sorted(T))
-            for sym in nfa.volcabulary:
+            for sym in nfa.alphabet:
                 print sym + ":"
                 M = nfa.move(T, sym)
                 print "  move({}, {}) = {}".format(helper.stateName(T), sym, sorted(M))

@@ -55,7 +55,7 @@ def draw_graphviz(table, start, accept):
     # draw 
     g.view()
 
-def fa_volcabulary(table):
+def fa_alphabet(table):
     '''
     get valcabulary (all possible input, not including E) from a table
     '''
@@ -91,7 +91,7 @@ trans = \
 class FA(object):
     def __init__(self, table, start, accept):
         self.table, self.start, self.accept = table, start, accept #trans_table(tab_name)
-        self.volcabulary = fa_volcabulary(self.table)
+        self.alphabet = fa_alphabet(self.table)
 
     def draw(self):
         draw_graphviz(self.table, self.start, self.accept)

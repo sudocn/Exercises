@@ -17,7 +17,7 @@ def SimNFA(nfa, x):
     
     print
     print "== Start simulating NFA =="
-    print "volcabulary:", sorted(nfa.volcabulary)
+    print "alphabet:", sorted(nfa.alphabet)
 
     xlist = list(x)
     
@@ -52,7 +52,7 @@ def SimDFA(dfa, x):
     
     print
     print "== Start simulating DFA =="
-    #print "volcabulary:", sorted(dfa.volcabulary)
+    #print "alphabet:", sorted(dfa.alphabet)
 
     xlist = list(x)
     

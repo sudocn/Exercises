@@ -1,32 +1,44 @@
 #!/usr/bin/python
 
+class ParseError(Exception):
+    pass
 
-class ReNode(object):
+'''
+Considering the most basic regular experssion, has 3 operations:
+
+  Union: '|'
+  Concatenation: '' (no symbol/empty symbol)
+  (Kleene) closure: '*'
+
+Besides, '()' are used to change priority.
+
+The BNF for the regular expression are
+
+  expr -> expr '|' term | term
+  term -> term closure | closure
+  closure -> atom* | atom
+  atom -> char | (expr)
+
+'''
+
+class Node(object):
     '''
-    A RE node (regular expression node) factory
+    A RE node (regular expression node) base class
     '''
-    TYPE_NONE = 0
-    TYPE_OR = 1
-    TYPE_CAT = 2
-    TYPE_CLOSURE = 3
-    TYPE_PARENTH = 4
-    TYPE_LEAF = 5
-
-    global_index = 0
-
-    def __init__(self, name, operator):
+    type = 'NODE'
+    def __init__(self, name=None):
         self.name = name
-        self.oper = operator
-        self.left = None
-        self.right = None
+        self.children = []
+
+    def isLeaf(self):
+        return not self.children
 
     def __str__(self):
-        type_str = {0:'ERR', 1:'|', 2:'+', 3:'*', 4:'()', 5:''}
-        if self.oper in (ReNode.TYPE_OR, ReNode.TYPE_CAT):
-            return "{}{} [{} , {}]".format(self.name, type_str[self.oper],
-                                                    self.left, self.right)
-        else:
-            return "<{}{}: {}>".format(self.name, type_str[self.oper], self.left)            
+        res = '{}('.format(self.type)
+        for child in self.children:
+            res += '{},'.format(child)
+        
+        return res[:-1] + ')'
 
     @classmethod
     def reset(cls):
@@ -38,49 +50,113 @@ class ReNode(object):
         cls.global_index += 1
         return name
     
-    @classmethod
-    def makeOr(cls, left, right):
-        node = cls(cls.name(), ReNode.TYPE_OR)
-        node.left = left
-        node.right = right
-        return node
+class Atom(Node):
+    '''
+    1. a single char
+    2. a expression enclose by '()'
+    '''
+    type = 'ATOM'
+    def __init__(self, c):
+        super(Atom, self).__init__()
+        self.id = c
 
-    @classmethod
-    def makeCat(cls, left, right):
-        node = cls(cls.name(), ReNode.TYPE_CAT)
-        node.left = left
-        node.right = right
-        return node
+    def __str__(self):
+        return "{}({})".format(self.type, self.id)
+
+class Closure(Node):
+    type = 'CLOSURE'
+    def __init__(self, node):
+        super(Closure, self).__init__()
+        self.children.append(node)
+
+    def __str__(self):
+        return "{}({}*)".format(self.type, self.children[0])
+
+class Term(Node):
+    '''
+    All operation except Union '|'
+    '''
+    type = 'TERM'
+    def __init__(self, L, R):
+        super(Term, self).__init__()
+
+        self.children.append(L)
+        self.children.append(R)
+
+class Expr(Node):
+    '''
+    '''
+    type = 'EXPR'
+    def __init__(self, L, R):
+        super(Expr, self).__init__()
+
+        self.children.append(L)
+        self.children.append(R)
     
-    @classmethod
-    def makeClosure(cls, oprand):
-        node = cls(cls.name(), ReNode.TYPE_CLOSURE)
-        node.left = oprand
-        return node
 
-    @classmethod
-    def makeParenth(cls, target):
-        node = cls(cls.name(), ReNode.TYPE_PARENTH)
-        node.left = target
-        return node
+#
+#
+#
 
-    @classmethod
-    def makeLeaf(cls, target):
-        node = cls(cls.name(), ReNode.TYPE_LEAF)
-        node.left = target
-        return node
-
-class Expression(object):
+class RegexString(object):
     def __init__(self, re_str):
-        self.re_str = re_str
-        self.expr = list(re_str)
+        self.text = re_str
+        self.content = list(re_str)
+    
+    def getAtom(self):
+        try:
+            c = self.getc()
+        except IndexError:
+            return None
 
+        if c == '(':
+            end = self.content.index(')')
+            t = ''.join(self.content[:end])
+            return Atom(t)
+        elif c in '*|':
+            self.putc(c)
+            #return None
+            raise ParseError('getAtom: {} is not an atom, remain str {}'.format(c, ''.join(self.content)))
+        else:
+            return Atom(c)
+
+    def getClosure(self):
+        atom = self.getAtom()
+        if not atom: return None
+        if self.peek() == '*':
+            self.getc()
+            return Closure(atom)
+        else:
+            return atom
+
+    def getTerm(self):
+        left = self.getClosure()
+        if not left:
+            return None
+        while True:
+            if self.peek() == '|':
+                break
+            right = self.getClosure()
+            if not right:
+                break
+            left = Term(left, right)
+            #right = self.getClosure()
+        return left
+
+    def getExpr(self):
+        left = self.getTerm()
+
+    ############
+    # utilities
     def peek(self):
-        return self.expr[0]
+        return self.content[0] if self.content else ''
+
+    def getc(self):
+        return self.content.pop(0)
     
-    def getchar(self):
-        return self.expr.pop(0)
-    
+    def putc(self, c):
+        self.content[0:0] = c
+
 class NodeStack(object):
     def __init__(self):
         self.stack = []
@@ -149,37 +225,48 @@ class ReTree(object):
     
     @classmethod
     def parse(cls, re_string):
+        '''
+        Main funtion to convert re string to parse tree
+        '''
         tree = cls()
-        tree.expr = Expression(re_string)
-        ReNode.reset()
-        try:
-            while True:
-                tree.getBlock()
-        except IndexError:
-            print "Done."
-            return tree
+
+        re = RegexString(re_string)
+        term = re.getTerm()
+        
     
 import unittest
-class CaseReNode(unittest.TestCase):
-    def testNodeCreate(self):
-        n1 = ReNode.makeOr("LEFT", "RIGHT")
-        print n1
-        
-        n2 = ReNode.makeCat("LEFT", "RIGHT")
-        print n2
+class TCaseRegexString(unittest.TestCase):
+    def test_getAtom(self):
+        re = RegexString('abcdef')
+        atom = re.getAtom()
+        while atom:
+            print(atom)
+            atom = re.getAtom()
 
-        n3 = ReNode.makeClosure("TARGET")
-        print n3
+    def test_getClosure(self):
+        re = RegexString('a*b*c*de*f*gh')
+        cl = re.getClosure()
+        while cl:
+            print(cl)
+            cl = re.getClosure()
+    
+    def test_getTerm(self):
+        re = RegexString('a|*b*|c')
+        t = re.getTerm()
+        print(t)
 
-        n4 = ReNode.makeParenth("TARGET")
-        print n4
+        re = RegexString('a*b*|c')
+        t = re.getTerm()
+        print(t)
+        re = RegexString('a*b*c')
+        t = re.getTerm()
+        print(t)
+        #    t = re.getTerm()
 
-        n5 = ReNode.makeLeaf("LEAF")
-        print n5
-
-class CaseExpression(unittest.TestCase):
+'''
+class TCaseExpression(unittest.TestCase):
     def test_init(self):
-        expr = Expression("abcdefg")
+        expr = RegexString("abcdefg")
         self.assertEqual(expr.peek(), 'a')
         self.assertEqual(expr.getchar(), 'a')
         self.assertEqual(expr.getchar(), 'b')
@@ -189,7 +276,7 @@ class CaseExpression(unittest.TestCase):
         #while True:
         #    expr.getchar()
 
-class CaseReTree(unittest.TestCase):
+class TCaseReTree(unittest.TestCase):
     def testCat(self):
         tree = ReTree.parse("abcde")
         self.assertEqual(len( tree.stack.stack ) , 1)
@@ -197,3 +284,4 @@ class CaseReTree(unittest.TestCase):
         self.assertEqual(str(tree.stack.stack[0]),
                          'r8+ [r6+ [r4+ [r2+ [<r0: a> , <r1: b>] , <r3: c>] , <r5: d>] , <r7: e>]')
 #        print tree
+'''

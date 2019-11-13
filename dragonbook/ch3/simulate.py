@@ -21,7 +21,7 @@ def SimNFA(nfa, x):
 
     xlist = list(x)
     
-    S = nfa.Eclosure(nfa.start)
+    S = nfa.Eclosure(set([nfa.start]))
     print "start: {}".format(sorted(S))
 
     try:

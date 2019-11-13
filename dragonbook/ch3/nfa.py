@@ -112,12 +112,11 @@ class FA(object):
         return set(r)            
 
     def Eclosure(self, states):
-
-        if isinstance(states, list):
-            raise Exception("states must be set")
-    
+        '''
+        e-closure operation, Figure 3.31 & 3.33
+        '''
         if not isinstance(states, set):
-            states =  set( states )
+            raise Exception("states must be set")
     
         stack = list(states)
         ecl = states.copy()

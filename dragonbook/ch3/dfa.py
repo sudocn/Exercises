@@ -133,7 +133,7 @@ class DFA(FA):
 
         helper = DFAHelper()
         print "start:"
-        S = nfa.Eclosure(nfa.start)
+        S = nfa.Eclosure(set([nfa.start]))
         helper.addState(S, start=True,  accept=(len(nfa.accept & S) != 0))
         
         while helper.unmarked():

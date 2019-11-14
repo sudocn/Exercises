@@ -22,10 +22,19 @@ The BNF for the regular expression are
 
 '''
 
+global_index = 0
+def unique_name(prefix):
+    global global_index
+    global_index += 1
+    return prefix + str(global_index)
+    
+
 def draw_node(g, node):
     #s = node.name
     if node.isLeaf():
-        g.edge(node.name, node.id)
+        # need labels otherwise we will have duplicate names
+        g.node('a'+node.name, label=node.id)
+        g.edge(node.name, 'a'+node.name)
     else:
         for e in node.children:
             draw_node(g, e)
@@ -49,7 +58,6 @@ def draw_graphviz(node):
 
     g.view()
 
-global_index = 0
 class Node(object):
     '''
     A RE node (regular expression node) base class
@@ -65,10 +73,8 @@ class Node(object):
 
     @property
     def name(self):
-        global global_index
         if not self._name:
-            self._name = 'r'+str(global_index) + (self.op if hasattr(self, 'op') else '')
-            global_index += 1
+            self._name = unique_name('r') + (self.op if hasattr(self, 'op') else '')
         return self._name
         
     def __str__(self):
@@ -138,7 +144,13 @@ class Expr(Node):
         self.children.append(L)
         self.children.append(R)
     
-
+class Bracket(Node):
+    type = 'PARA'
+    op = '@'	# should be '()', use @ for readability
+    def __init__(self, node):
+        super(Bracket, self).__init__()
+        self.children.append(node)
+    
 #
 #
 #
@@ -155,10 +167,23 @@ class RegexString(object):
             return None
 
         if c == '(':
+            # TODO: look ahead too far, new method needed
+            lvl = 1
+            for i,v in enumerate(self.content): # handle nested braces
+                if v == '(':
+                    lvl += 1
+                elif v == ')':
+                    lvl -= 1
+                    if lvl == 0:
+                        break
+                
             end = self.content.index(')')
-            t = ''.join(self.content[:end])
-            return Atom(t)
-        elif c in '*|':
+            txt = ''.join(self.content[:i])
+            del self.content[:i+1]
+            node = RegexString(txt).parse()
+            #print 'para', ''.join(self.content)
+            return Bracket(node)
+        elif c in '*|)':
             self.putc(c)
             #return None
             raise ParseError('getAtom: {} is not an atom, remain str {}'.format(c, ''.join(self.content)))
@@ -335,8 +360,28 @@ class TCaseRegexString(unittest.TestCase):
             t = re.getExpr()
             print('expr: {} -> {}'.format(txt, t))
 
-    def test_draw(self):
-        expr = RegexString('ab*cd|ef*g*hi*j|k').parse()
-        #expr = re.getExpr()
+    def test_para(self):
+        arr = [
+            'a(b)',
+            '(ab)*',
+            '(ab)|b*|c',
+            'a*(b*|c)*',
+            'a*(b|c)*d',
+            'abcdefghijk'
+        ]
+        for txt in arr:
+            re = RegexString(txt)
+            t = re.getExpr()
+            print('expr: {} -> {}'.format(txt, t))
+
+if __name__ == '__main__':
+        print RegexString('(a*|b*)*').getClosure()
+        #re = 'ab*cd|ef*g*hi*j|k'
+        #re = '(a|b)*abb'
+        #re = '(a*|b*)*'
+        #re = '((E|a)b*)*'
+        re = '(a|b)*abb(a|b)*'
+        expr = RegexString(re).parse()
+
         draw_graphviz(expr)
 

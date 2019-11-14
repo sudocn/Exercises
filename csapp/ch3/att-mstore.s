@@ -27,6 +27,16 @@ multstore:
         #movl    %eax, %rdx
         #movb    %si, 8(%rbp)
 
+	# problem 3.6, p.228
+        movq    $0xbaadbeef55aa, %rdx
+	movq	$17, %rbx
+	
+        leaq    9(%rdx), %rax
+	leaq	(%rdx,%rbx), %rax
+	leaq	(%rdx,%rbx,4), %rax
+	leaq	2(%rbx,%rbx,8), %rax
+	leaq	0xE(,%rdx,4), %rax
+	leaq	6(%rbx,%rdx,8), %rax
 
         xorq    %rcx, %rcx
         movq    $0, %rcx

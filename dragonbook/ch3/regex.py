@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from graphviz import Digraph
 
 class ParseError(Exception):
     pass
@@ -21,18 +22,55 @@ The BNF for the regular expression are
 
 '''
 
+def draw_node(g, node):
+    #s = node.name
+    if node.isLeaf():
+        g.edge(node.name, node.id)
+    else:
+        for e in node.children:
+            draw_node(g, e)
+            print("add edge {}->{}".format(node.name, e.name))
+            g.edge(node.name, e.name)
+    
+def draw_graphviz(node):
+    '''
+    Draw a NFA graph by transition table
+    table: transition table
+    start: start state
+    accept: accepting states
+    '''
+
+    g = Digraph('NFA', filename='parse_tree.gv',
+                #graph_attr={'rankdir': 'LR', 'newrank':'true'},
+                node_attr={'shape':'none', 'fontname':'Source Code Pro'},
+                edge_attr={'arrowhead':'none', 'fontname':'Source Code Pro'})
+
+    draw_node(g,node)
+
+    g.view()
+
+global_index = 0
 class Node(object):
     '''
     A RE node (regular expression node) base class
     '''
+    global_index = 0
     type = 'NODE'
     def __init__(self, name=None):
-        self.name = name
+        self._name = name
         self.children = []
 
     def isLeaf(self):
         return not self.children
 
+    @property
+    def name(self):
+        global global_index
+        if not self._name:
+            self._name = 'r'+str(global_index) + (self.op if hasattr(self, 'op') else '')
+            global_index += 1
+        return self._name
+        
     def __str__(self):
         '''
         res = '{}('.format(self.type)
@@ -48,7 +86,7 @@ class Node(object):
         cls.global_index = 0
 
     @classmethod
-    def name(cls):
+    def disabe_name(cls):
         name = 'r'+str(cls.global_index)
         cls.global_index += 1
         return name
@@ -165,6 +203,9 @@ class RegexString(object):
                 raise ParseError('getExpr: no term find after |, str {}'.format(''.join(self.content)))
             left = Expr(left, right)
         return left
+
+    def parse(self):
+        return self.getExpr()
 
     ############
     # utilities
@@ -294,26 +335,8 @@ class TCaseRegexString(unittest.TestCase):
             t = re.getExpr()
             print('expr: {} -> {}'.format(txt, t))
 
+    def test_draw(self):
+        expr = RegexString('ab*cd|ef*g*hi*j|k').parse()
+        #expr = re.getExpr()
+        draw_graphviz(expr)
 
-'''
-class TCaseExpression(unittest.TestCase):
-    def test_init(self):
-        expr = RegexString("abcdefg")
-        self.assertEqual(expr.peek(), 'a')
-        self.assertEqual(expr.getchar(), 'a')
-        self.assertEqual(expr.getchar(), 'b')
-        self.assertEqual(expr.peek(), 'c')
-        self.assertEqual(expr.expr, list('cdefg'))
-
-        #while True:
-        #    expr.getchar()
-
-class TCaseReTree(unittest.TestCase):
-    def testCat(self):
-        tree = ReTree.parse("abcde")
-        self.assertEqual(len( tree.stack.stack ) , 1)
-        print tree.stack.stack[0]
-        self.assertEqual(str(tree.stack.stack[0]),
-                         'r8+ [r6+ [r4+ [r2+ [<r0: a> , <r1: b>] , <r3: c>] , <r5: d>] , <r7: e>]')
-#        print tree
-'''

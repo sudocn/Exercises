@@ -34,11 +34,14 @@ class Node(object):
         return not self.children
 
     def __str__(self):
+        '''
         res = '{}('.format(self.type)
         for child in self.children:
             res += '{},'.format(child)
         
         return res[:-1] + ')'
+        '''
+        return '{}({})'.format(self.op, ','.join(map(str, self.children)))
 
     @classmethod
     def reset(cls):
@@ -61,22 +64,25 @@ class Atom(Node):
         self.id = c
 
     def __str__(self):
-        return "{}({})".format(self.type, self.id)
+        #return "{}({})".format(self.type, self.id)
+        return self.id
 
 class Closure(Node):
     type = 'CLOSURE'
+    op = '*'
     def __init__(self, node):
         super(Closure, self).__init__()
         self.children.append(node)
 
-    def __str__(self):
-        return "{}({}*)".format(self.type, self.children[0])
+    #def __str__(self):
+    #    return "{}({}*)".format(self.type, self.children[0])
 
 class Term(Node):
     '''
     All operation except Union '|'
     '''
     type = 'TERM'
+    op = '+'
     def __init__(self, L, R):
         super(Term, self).__init__()
 
@@ -87,6 +93,7 @@ class Expr(Node):
     '''
     '''
     type = 'EXPR'
+    op = '|'
     def __init__(self, L, R):
         super(Expr, self).__init__()
 
@@ -131,7 +138,7 @@ class RegexString(object):
 
     def getTerm(self):
         left = self.getClosure()
-        if not left:
+        if not left:    # ?? need ??
             return None
         while True:
             if self.peek() == '|':
@@ -145,6 +152,19 @@ class RegexString(object):
 
     def getExpr(self):
         left = self.getTerm()
+        if not left:    # ?? need ??
+            return None
+        while True:
+            if self.peek() == '': # reach end
+                break
+            if self.peek() != '|':
+                raise ParseError('getExpr: not a union, str {}'.format(''.join(self.content)))
+            self.getc()
+            right = self.getTerm()
+            if not right:
+                raise ParseError('getExpr: no term find after |, str {}'.format(''.join(self.content)))
+            left = Expr(left, right)
+        return left
 
     ############
     # utilities
@@ -251,17 +271,29 @@ class TCaseRegexString(unittest.TestCase):
             cl = re.getClosure()
     
     def test_getTerm(self):
-        re = RegexString('a|*b*|c')
-        t = re.getTerm()
-        print(t)
+        arr = [
+            'a|*b*|c',
+            'a*b*|c',
+            'a*b*c'
+        ]
+        for txt in arr:
+            re = RegexString(txt)
+            t = re.getTerm()
+            print('term: {} -> {}'.format(txt, t))
 
-        re = RegexString('a*b*|c')
-        t = re.getTerm()
-        print(t)
-        re = RegexString('a*b*c')
-        t = re.getTerm()
-        print(t)
-        #    t = re.getTerm()
+    def test_getExpr(self):
+        arr = [
+            'a|b',
+            'a*|b*|c',
+            'a*b*|c',
+            'a*b*c',
+            'abcdefghijk'
+        ]
+        for txt in arr:
+            re = RegexString(txt)
+            t = re.getExpr()
+            print('expr: {} -> {}'.format(txt, t))
+
 
 '''
 class TCaseExpression(unittest.TestCase):

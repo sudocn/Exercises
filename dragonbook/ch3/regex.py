@@ -155,7 +155,7 @@ class Bracket(Node):
 #
 #
 
-class RegexString(object):
+class Regex(object):
     def __init__(self, re_str):
         self.text = re_str
         self.content = list(re_str)
@@ -180,7 +180,7 @@ class RegexString(object):
             end = self.content.index(')')
             txt = ''.join(self.content[:i])
             del self.content[:i+1]
-            node = RegexString(txt).parse()
+            node = Regex.parse(txt)
             #print 'para', ''.join(self.content)
             return Bracket(node)
         elif c in '*|)':
@@ -229,8 +229,9 @@ class RegexString(object):
             left = Expr(left, right)
         return left
 
-    def parse(self):
-        return self.getExpr()
+    @classmethod
+    def parse(cls, re_str):
+        return cls(re_str).getExpr()
 
     ############
     # utilities
@@ -242,95 +243,19 @@ class RegexString(object):
     
     def putc(self, c):
         self.content[0:0] = c
-
-class NodeStack(object):
-    def __init__(self):
-        self.stack = []
-
-    def push(self, item):
-        assert(isinstance(item, ReNode))
-        self.stack.append(item)
-        return item
     
-    def pop(self):
-        return self.stack.pop()
 
-    def empty(self):
-        return len(self.stack) == 0
-
-    def __str__(self):
-        return str(map(str, self.stack))
-
-class ReTree(object):
-    def __init__(self):
-        self.stack = NodeStack()
-        self.expr = None
-
-    def _setRoot(self, root):
-        assert(isinstance(root, ReNode))
-        self.root = root
-
-    def buildParenth(self):
-        pass
-
-    def buildOr(self):
-        pass
-
-    def getBlock(self):
-        '''
-        get a syntax block from re expression
-
-        precedence:
-        *
-        ()
-        cat
-        |
-        '''
-        ch = self.expr.getchar()
-        print "   ch -> {}".format(ch)
-
-        if ch == '(':
-            self.stack.push(ReNode.makeParenthNode())
-        elif ch == ')':
-            self.buildParenth()
-        elif ch == '|':
-            self.buildOr()
-        elif ch == '*':
-            pass
-        else:
-            current = ReNode.makeLeaf(ch)
-            if self.stack.empty():
-                self.stack.push(current)
-            else:
-                prev = self.stack.pop()
-                cat = ReNode.makeCat(prev, current)
-                self.stack.push(cat)
-
-    def __str__(self):
-        return self.stack.__str__()
-    
-    @classmethod
-    def parse(cls, re_string):
-        '''
-        Main funtion to convert re string to parse tree
-        '''
-        tree = cls()
-
-        re = RegexString(re_string)
-        term = re.getTerm()
-        
-    
 import unittest
 class TCaseRegexString(unittest.TestCase):
     def test_getAtom(self):
-        re = RegexString('abcdef')
+        re = Regex('abcdef')
         atom = re.getAtom()
         while atom:
             print(atom)
             atom = re.getAtom()
 
     def test_getClosure(self):
-        re = RegexString('a*b*c*de*f*gh')
+        re = Regex('a*b*c*de*f*gh')
         cl = re.getClosure()
         while cl:
             print(cl)
@@ -343,7 +268,7 @@ class TCaseRegexString(unittest.TestCase):
             'a*b*c'
         ]
         for txt in arr:
-            re = RegexString(txt)
+            re = Regex(txt)
             t = re.getTerm()
             print('term: {} -> {}'.format(txt, t))
 
@@ -356,7 +281,7 @@ class TCaseRegexString(unittest.TestCase):
             'abcdefghijk'
         ]
         for txt in arr:
-            re = RegexString(txt)
+            re = Regex(txt)
             t = re.getExpr()
             print('expr: {} -> {}'.format(txt, t))
 
@@ -370,18 +295,18 @@ class TCaseRegexString(unittest.TestCase):
             'abcdefghijk'
         ]
         for txt in arr:
-            re = RegexString(txt)
+            re = Regex(txt)
             t = re.getExpr()
             print('expr: {} -> {}'.format(txt, t))
 
 if __name__ == '__main__':
-        print RegexString('(a*|b*)*').getClosure()
+        print Regex('(a*|b*)*').getClosure()
         #re = 'ab*cd|ef*g*hi*j|k'
         #re = '(a|b)*abb'
         #re = '(a*|b*)*'
         #re = '((E|a)b*)*'
         re = '(a|b)*abb(a|b)*'
-        expr = RegexString(re).parse()
+        expr = Regex.parse(re)
 
         draw_graphviz(expr)
 

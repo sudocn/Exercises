@@ -4,6 +4,19 @@ from graphviz import Digraph
 class ParseError(Exception):
     pass
 
+
+def merge_subtable(parent, *sub):
+    #print('sub = ',sub)
+    for t in sub:
+        for k,v in t.items():
+            if k == 'start' or k == 'end':
+                continue
+            if k in parent:
+                #parent[k] = parent[k].merge(v)
+                parent[k].merge(v)
+            else:
+                parent[k] = v
+
 '''
 Considering the most basic regular experssion, has 3 operations:
 
@@ -70,6 +83,9 @@ class Node(object):
 
     def isLeaf(self):
         return not self.children
+    
+    def transtable(self):
+        return {'start':'unimplemented', 'end':'unimplemented'}
 
     @property
     def name(self):
@@ -107,6 +123,10 @@ class Atom(Node):
         super(Atom, self).__init__()
         self.id = c
 
+    def transtable(self):
+        s,e = self.name+'s',self.name+'e'
+        return {'start':s, 'end':e, s:{e:self.id}}
+
     def __str__(self):
         #return "{}({})".format(self.type, self.id)
         return self.id
@@ -117,6 +137,18 @@ class Closure(Node):
     def __init__(self, node):
         super(Closure, self).__init__()
         self.children.append(node)
+
+    def transtable(self):
+        table = self.children[0].transtable().copy()
+        os,oe = table['start'],table['end']
+        s,e = self.name+'s',self.name+'e'
+        merge_subtable(table, 
+            {s:{os:'E', e:'E'}, 
+            oe:{e:'E', os: 'E'}
+            })
+        table['start'] = s
+        table['end'] = e
+        return table
 
     #def __str__(self):
     #    return "{}({}*)".format(self.type, self.children[0])
@@ -133,6 +165,17 @@ class Term(Node):
         self.children.append(L)
         self.children.append(R)
 
+    def transtable(self):
+        lt = self.children[0].transtable()
+        rt = self.children[1].transtable()
+        s,e = self.name+'s',self.name+'e'
+        table = {
+            'start':lt['start'], 
+            'end':rt['end'], 
+        }
+        merge_subtable(table, lt, rt)
+        return table
+
 class Expr(Node):
     '''
     '''
@@ -144,12 +187,29 @@ class Expr(Node):
         self.children.append(L)
         self.children.append(R)
     
+    def transtable(self):
+        lt = self.children[0].transtable()
+        rt = self.children[1].transtable()
+        s,e = self.name+'s',self.name+'e'
+        table = {
+            'start':s, 
+            'end':e, 
+            s:{lt['start']:'E', rt['start']:'E'},
+            lt['end']:{e:'E'},
+            rt['end']:{e:'E'}
+        }
+        merge_subtable(table, lt, rt)
+        return table
+    
 class Bracket(Node):
     type = 'PARA'
     op = '@'	# should be '()', use @ for readability
     def __init__(self, node):
         super(Bracket, self).__init__()
         self.children.append(node)
+
+    def transtable(self):
+        return self.children[0].transtable()
     
 #
 #
@@ -243,8 +303,24 @@ class Regex(object):
     
     def putc(self, c):
         self.content[0:0] = c
-    
 
+
+class RegexConverter(object):
+    def traverse(self, node, func):
+        for child in node.children:
+            self.traverse(child, func)
+        func(node)        
+
+    def toNFATable(self, root):
+        def proc(n):
+            print("t:"+n.name, n.transtable())
+        self.traverse(root, proc)
+
+
+
+#
+#
+#
 import unittest
 class TCaseRegexString(unittest.TestCase):
     def test_getAtom(self):
@@ -298,6 +374,12 @@ class TCaseRegexString(unittest.TestCase):
             re = Regex(txt)
             t = re.getExpr()
             print('expr: {} -> {}'.format(txt, t))
+
+class TCaseRegexConverter(unittest.TestCase):
+    def test_toNFA(sef):
+        conv = RegexConverter()
+        tree  = Regex.parse("abc|c*")
+        conv.toNFATable(tree)
 
 if __name__ == '__main__':
         print Regex('(a*|b*)*').getClosure()

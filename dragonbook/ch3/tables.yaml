@@ -1,73 +1,81 @@
 #!/usr/bin/python
 #import yaml
 
+# table format:
+#   src_state:
+#     dest_state: route
+# or 
+#   src_state:
+#     dest_state: [route1, route2]
+
 t3_26:
-  0: 
-    start:
-    E: [1,3]
+  start: 0
+  accepts: [2, 4]
+  0:
+    1: E
+    3: E
   1:
-    a: 2
+    2: a
   2:
-    accept:
-    a: 2
+    2: a
   3:
-    b: 4
+    4: b
   4:
-    accept:
-    b: 4
+    4: b
 
 t3_29:
+  start: 0
+  accepts: [3]
   0:
-    start:
-    a: [0,1]
-    b: 0
+    0: [a,b]
+    1: a
   1:
-    a: [1,2]
-    b: 1
+    1: [a,b]
+    2: a
   2:
-    a: 2
-    b: [2,3]
-    E: 0
-  3:
-    accept:
+    2: [a,b]
+    3: b
+    0: E
 
 t3_30:
+  start: 0
+  accepts: [3]
   0:
-    start:
-    E: 3
-    a: 1
+    1: a
+    3: E
   1:
-    E: 0
-    b: 2
-  2: 
-    E: 1
-    b: 3
+    0: E
+    2: b
+  2:
+    1: E
+    3: b
   3:
-    accept:
-    E: 2
-    a: 0
+    0: a
+    2: E
 
 t3_21:
+  start: 0
+  accepts: [10]
   0:
-    start:
-    E: [1,7]
+    1: E
+    7: E
   1:
-    E: [2,4]
+    2: E
+    4: E
   2:
-    a: 3
+    3: a
   3:
-    E: 6
+    6: E
   4:
-    b: 5
+    5: b
   5:
-    E: 6
+    6: E
   6:
-    E: [1, 7]
+    1: E
+    7: E
   7:
-    a: 8
+    8: a
   8: 
-    b: 9
+    9: b
   9:
-    b: 10
-  10:
-    accept:
+    10: b

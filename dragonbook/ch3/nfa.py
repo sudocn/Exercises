@@ -1,16 +1,16 @@
 #!/usr/bin/python
 import yaml
 from graphviz import Digraph
-from transtable import trans_table
+from transtable import trans_table, load_default
 
 EMPTY = 'E'
 
-def draw_graphviz(table, start, accept):
+def draw_graphviz(table, start, accepts):
     '''
     Draw a NFA graph by transition table
     table: transition table
     start: start state
-    accept: accepting states
+    accepts: accepting states
     '''
 
     g = Digraph('NFA', filename='NFA.gv',
@@ -19,16 +19,8 @@ def draw_graphviz(table, start, accept):
                 edge_attr={'arrowhead':'normal', 'fontname':'Source Code Pro'})
 
     # create states
-    #'''
-    for state in sorted(table.keys()):
-        if state in accept:
-            g.node(state, shape='doublecircle')
-        else:
-            g.node(state)
-    '''
-    for s in accept:
+    for s in accepts:
         g.node(str(s), shape='doublecircle')
-    '''
 
     # add start arrow
     g.node('start', shape='none')
@@ -38,8 +30,8 @@ def draw_graphviz(table, start, accept):
     #g.edges(['01', '12', '14', '23', '45', '36', '56', '67'])
     for src, trans in table.items():
         if trans is None: continue
-        for symbol, dest_list in trans.items():
-            for dest in dest_list:
+        for dest, symbol_list in trans.items():
+            for symbol in symbol_list:
                 print "adding {} -{}-> {}".format(src, symbol, dest)
                 '''
                 g.edge(src, dest, symbol,
@@ -54,21 +46,6 @@ def draw_graphviz(table, start, accept):
 
     # draw 
     g.view()
-
-trans = \
-        '''
-0:
-    start:
-    a: [0,1]
-    b: 0
-1:
-    b: 2
-2:
-    b: 3
-3:
-    accept:
-        '''
-
 
 ################################################################################
 #
@@ -98,7 +75,9 @@ class FA(object):
     def move(self, states, symbol):
         def move_one(table, state, symbol):
             #print "move_one", state, symbol
-            return table[state].get(symbol, [])
+            route = table[state]
+            return [k for k,v in route.items() if symbol in v]
+            #return table[state].get(symbol, [])
 
         if isinstance(states, list):
             raise Exception("states must be set")
@@ -135,21 +114,12 @@ class NFA(FA):
     pass
 
 
-'''
-states: A, B, C
-symbols: a, b
-
-A:
-  start:
-  a: [A,B]
-  b: A
-B:
-  a: B
-  b: [C,D]
-C:
-  accept:
-  a: C
-'''
+import unittest
+class TCaseNfa(unittest.TestCase):
+    def test_draw(self):
+        t,s,a = load_default('t3_29')
+        print('t:{}, s:{}, a:{}'.format(t,s,a))
+        draw_graphviz(t,s,a)
 
 if __name__ == "__main__":
        fa_draw(trans)

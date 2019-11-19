@@ -4,23 +4,14 @@ from pprint import pprint
 
 def fa_parse(table):
     '''
-    parse raw table (contains 'start', 'accept' info) to pure transition table .
+    parse raw table (contains 'start', 'accepts' info) to pure transition table .
     '''
-    start = None
-    accept = []
+    start = str(table.pop('start'))
+    accepts = map(str, table.pop('accepts'))
 
     for state in table.keys():
         moves = table.pop(state) # moves should be a dict too
         
-        # handle start/accept special keys
-        if 'start' in moves:
-            start = str(state)
-            moves.pop('start')
-            
-        if 'accept' in moves:
-            accept.append(str(state))
-            moves.pop('accept')
-
         # stringfy and listfy moves
         new_moves = {}
         for k,v in moves.items():
@@ -32,7 +23,7 @@ def fa_parse(table):
         # rebuild dict key
         table[str(state)] = new_moves
 
-    return start, set(accept)
+    return start, set(accepts)
 
 def trans_table(y):
     #print yaml.dump(y)

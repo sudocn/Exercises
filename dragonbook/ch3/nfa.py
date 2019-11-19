@@ -18,6 +18,7 @@ def draw_graphviz(table, start, accepts):
                 node_attr={'shape':'circle', 'fontname':'Source Code Pro'},
                 edge_attr={'arrowhead':'normal', 'fontname':'Source Code Pro'})
 
+    assert(isinstance(start, str))
     # create states
     for s in accepts:
         g.node(str(s), shape='doublecircle')
@@ -73,24 +74,27 @@ class FA(object):
     def draw(self):
         draw_graphviz(self.table, self.start, self.accepts)
 
-    def move(self, states, symbol):
-        def move_one(table, state, symbol):
-            #print "move_one", state, symbol
-            if state not in table:
-                return []
-            route = table[state]
-            print("move_one:({},{}) {}".format(state, symbol, [k for k,v in route.items() if symbol in v]))
-            return [k for k,v in route.items() if symbol in v]
-            #return table[state].get(symbol, [])
 
+    def move_one(self, state, symbol):
+        #print "move_one", state, symbol
+        if state not in self.table:
+            return []
+        route = self.table[state]
+        print("move_one:({},{}) {}".format(state, symbol, [k for k,v in route.items() if symbol in v]))
+        return [k for k,v in route.items() if symbol in v]
+        #return table[state].get(symbol, [])
+
+    def move(self, states, symbol):
+
+        print("move -1--- states", states)
         if isinstance(states, list):
             raise Exception("states must be set")
     
-        if not isinstance(states, set):
-            states = set( states )
-
+        #if not isinstance(states, set):
+        #    states = set( states )
+        print("move -2--- states", states)
         r = []
-        [ r.extend(move_one(self.table, s, symbol)) for s in states ]
+        [ r.extend(self.move_one(s, symbol)) for s in states ]
         #print r
         return set(r)            
 
@@ -106,7 +110,7 @@ class FA(object):
 
         while stack:
             s = stack.pop()
-            for t in self.move(s, EMPTY):
+            for t in self.move_one(s, EMPTY):
                 if t not in ecl:
                     ecl.add(t)
                     stack.append(t)

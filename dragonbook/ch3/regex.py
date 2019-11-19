@@ -429,16 +429,27 @@ class TCaseRegexString(unittest.TestCase):
 class TCaseRegexConverter(unittest.TestCase):
     def test_toNFA(sef):
         import nfa
+        from transtable import trans_table
         conv = RegexConverter()
         #tree  = Regex.parse("a(b|c)*d|efg")#|c*")
         tree  = Regex.parse("(a|b)*abb")#|c*")
         table = conv.toNFATable(tree)
-        s, e = table['start'], [table['accepts']]
-        del table['start']
-        del table['accepts']
+        t, s, e = trans_table(table)
         print("start",s)
         print("accepts",e)
         nfa.draw_graphviz(table, s, e)
+
+    def test_toDFA(sef):
+        from nfa import NFA
+        from dfa import DFA
+        from transtable import trans_table
+        conv = RegexConverter()
+        tree  = Regex.parse("(a|b)*abb")#|c*")
+        table = conv.toNFATable(tree)
+        nfa = NFA(*trans_table(table))
+        nfa.draw()
+        dfa = DFA.from_nfa(nfa)
+        dfa.draw()
 
 class TCaseTableOp(unittest.TestCase):
     def test_merge(self):

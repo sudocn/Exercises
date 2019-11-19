@@ -2,13 +2,15 @@
 import yaml
 from pprint import pprint
 
-def fa_parse(table):
+def rectify(table):
     '''
-    parse raw table (contains 'start', 'accepts' info) to pure transition table .
+    parse raw table (contains 'start', 'accepts' info) to pure transition table:
+    1. start, accepts keys are removed
+    2. make sure accepts is presented as list
+    3. make sure each destination items are presentd as {src: {dest:[s,...]}} format
     '''
     start = str(table.pop('start'))
     accepts = map(str, table.pop('accepts'))
-
     for state in table.keys():
         moves = table.pop(state) # moves should be a dict too
         
@@ -28,11 +30,13 @@ def fa_parse(table):
 def trans_table(y):
     #print yaml.dump(y)
     print 'states:', [ x for x in y.keys() if x != 'start' and x != 'accepts']
-    print "-- y before parse --"
+    print "-- y before rectify --"
     print y
 
-    start, accept =  fa_parse(y)
-    print "-- y after parse --"
+    if isinstance(y['accepts'], str):   # in case there is one sole accept state
+        y['accepts'] = [y['accepts']]
+    start, accept =  rectify(y)
+    print "-- y after rectify --"
     print y
     print "start", start, "accept", accept
 

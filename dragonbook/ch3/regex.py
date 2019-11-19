@@ -9,13 +9,56 @@ def merge_subtable(parent, *sub):
     #print('sub = ',sub)
     for t in sub:
         for k,v in t.items():
-            if k == 'start' or k == 'end':
+            if k == 'start' or k == 'accepts':
                 continue
             if k in parent:
+                assert(isinstance(parent[k], dict))
                 #parent[k] = parent[k].merge(v)
-                parent[k].merge(v)
+                # TODO: seems update will flush old value, 
+                parent[k].update(v)
             else:
                 parent[k] = v
+    return parent
+
+def cat_table(left, right):
+    '''
+    for  r = st, concatenation
+    '''
+    newt = {'start':left['start'], 'accepts':right['accepts']}
+    merge_subtable(newt, left)
+
+    newright = {}
+    fr,to  = right['start'], left['accepts']    # rename right[start] to left[accepts]
+    #
+    # 3 possible places: outter key, inner key, inner value
+    #
+    #print('right: {}'.format(right))
+    for k, v in right.items(): # outter dict
+        #print("outer: {},{}".format(k,v))
+        if k == 'start' or k == 'accepts':
+            continue
+        if k == fr:
+            k = to
+        
+        if isinstance(v, dict):
+            inner = {}
+            for ik, iv in v.items():    # inner dict
+                if ik == fr: ik = to
+                # inner value may be a list
+                if isinstance(iv, list):
+                    iv = [to if x == fr else x for x in iv]
+                else:   # iv is a scalar
+                    if iv == fr:
+                        iv = to
+                inner[ik] = iv 
+            newright[k] = inner
+        else:   # v is a scalar
+            newright[k] = to if v == fr else v
+
+        #print("newright",newright)
+        #print("newt", newt)
+        #print('merged', merge_subtable(newt, newright))
+    return merge_subtable(newt, newright)
 
 '''
 Considering the most basic regular experssion, has 3 operations:
@@ -85,7 +128,7 @@ class Node(object):
         return not self.children
     
     def transtable(self):
-        return {'start':'unimplemented', 'end':'unimplemented'}
+        return {'start':'unimplemented', 'accepts':'unimplemented'}
 
     @property
     def name(self):
@@ -125,7 +168,7 @@ class Atom(Node):
 
     def transtable(self):
         s,e = self.name+'s',self.name+'e'
-        return {'start':s, 'end':e, s:{e:self.id}}
+        return {'start':s, 'accepts':e, s:{e:self.id}}
 
     def __str__(self):
         #return "{}({})".format(self.type, self.id)
@@ -140,14 +183,14 @@ class Closure(Node):
 
     def transtable(self):
         table = self.children[0].transtable().copy()
-        os,oe = table['start'],table['end']
+        os,oe = table['start'],table['accepts']
         s,e = self.name+'s',self.name+'e'
         merge_subtable(table, 
             {s:{os:'E', e:'E'}, 
             oe:{e:'E', os: 'E'}
             })
         table['start'] = s
-        table['end'] = e
+        table['accepts'] = e
         return table
 
     #def __str__(self):
@@ -168,12 +211,17 @@ class Term(Node):
     def transtable(self):
         lt = self.children[0].transtable()
         rt = self.children[1].transtable()
+        table = cat_table(lt, rt)
+        print('Term: ', table)
+        '''
+        mnode = lt['accepts'] + '.' + rt['start']
         s,e = self.name+'s',self.name+'e'
         table = {
             'start':lt['start'], 
-            'end':rt['end'], 
+            'accepts':rt['accepts'], 
         }
         merge_subtable(table, lt, rt)
+        '''
         return table
 
 class Expr(Node):
@@ -193,10 +241,10 @@ class Expr(Node):
         s,e = self.name+'s',self.name+'e'
         table = {
             'start':s, 
-            'end':e, 
+            'accepts':e, 
             s:{lt['start']:'E', rt['start']:'E'},
-            lt['end']:{e:'E'},
-            rt['end']:{e:'E'}
+            lt['accepts']:{e:'E'},
+            rt['accepts']:{e:'E'}
         }
         merge_subtable(table, lt, rt)
         return table
@@ -316,6 +364,9 @@ class RegexConverter(object):
             print("t:"+n.name, n.transtable())
         self.traverse(root, proc)
 
+        table = root.transtable()
+        print('toNFATable', table)
+        return table
 
 
 #
@@ -377,17 +428,32 @@ class TCaseRegexString(unittest.TestCase):
 
 class TCaseRegexConverter(unittest.TestCase):
     def test_toNFA(sef):
+        import nfa
         conv = RegexConverter()
-        tree  = Regex.parse("abc|c*")
-        conv.toNFATable(tree)
+        #tree  = Regex.parse("a(b|c)*d|efg")#|c*")
+        tree  = Regex.parse("(a|b)*abb")#|c*")
+        table = conv.toNFATable(tree)
+        s, e = table['start'], [table['accepts']]
+        del table['start']
+        del table['accepts']
+        print("start",s)
+        print("accepts",e)
+        nfa.draw_graphviz(table, s, e)
+
+class TCaseTableOp(unittest.TestCase):
+    def test_merge(self):
+        t1 = {'start': 'r1s', 'accepts': 'r2e', 'r1s': {'r1e': 'a'}}
+        t2 = {'r1e': {'r2e': 'b'}}
+        t = merge_subtable(t1, t2)
+        print(t)
 
 if __name__ == '__main__':
         print Regex('(a*|b*)*').getClosure()
         #re = 'ab*cd|ef*g*hi*j|k'
-        #re = '(a|b)*abb'
+        re = '(a|b)*abb'
         #re = '(a*|b*)*'
         #re = '((E|a)b*)*'
-        re = '(a|b)*abb(a|b)*'
+        #re = '(a|b)*abb(a|b)*'
         expr = Regex.parse(re)
 
         draw_graphviz(expr)

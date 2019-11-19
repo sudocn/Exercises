@@ -27,7 +27,7 @@ def fa_parse(table):
 
 def trans_table(y):
     #print yaml.dump(y)
-    print 'states:', y.keys()
+    print 'states:', [ x for x in y.keys() if x != 'start' and x != 'accepts']
     print "-- y before parse --"
     print y
 

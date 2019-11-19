@@ -31,7 +31,7 @@ class DFAHelper(object):
     def __init__(self):
         self.states = {}
         self.index = 0
-        self.trans = {}
+        self.trans = {'start':'', 'accepts':[]}
 
     def __str__(self):
         content = "======== DFA ========\n"
@@ -41,8 +41,10 @@ class DFAHelper(object):
 
         content += "tansition\n"
         for src in sorted(self.trans.keys()):
+            if src == 'accepts' or src == 'start':
+                continue
             moves = self.trans[src]
-            content += '{} : {}\n'.format(src, ', '.join([k + '->' + v for k,v in moves.items() ]))
+            content += '{} : {}\n'.format(src, ', '.join([','.join(v) + '-> ' + k for k,v in moves.items() ]))
 
         return content
 
@@ -60,7 +62,7 @@ class DFAHelper(object):
                 return v.states
         return None
 
-    def addState(self, Tset, start=False, accept=False):
+    def addState(self, Tset, start=False, accepts=False):
         assert isinstance(Tset, set)
         if self.hasState(Tset):
             raise Exception("state {} already in states set".format(Tset))
@@ -70,9 +72,9 @@ class DFAHelper(object):
 
         self.trans[st.name] = {}
         if start:
-            self.trans[st.name]["start"] = ''
-        if accept:
-            self.trans[st.name]["accept"] = ''
+            self.trans["start"] = st.name
+        if accepts:
+            self.trans["accepts"].append(st.name)
 
         print "  new State: {} {}".format(st.name, sorted(Tset))
         self.index += 1
@@ -101,12 +103,15 @@ class DFAHelper(object):
 
         if src_name not in self.trans:
             self.trans[src_name] = {}
-
-        self.trans[src_name][sym] = dst_name
+        if dst_name not in self.trans[src_name]:
+            self.trans[src_name][dst_name] = []
+        self.trans[src_name][dst_name].append(sym)
         
-    #def draw(self):
-    #    fa = FA(self.trans)
-    #    fa.draw()
+class DFA(FA):
+    '''
+    Definite finite automata
+    '''
+
     def move(self, state, symbol):
         if isinstance(state, set):
             print state
@@ -116,11 +121,6 @@ class DFAHelper(object):
         if len(dest) != 1:
             raise Exception("Error: multi move path, not a DFA")
         return list(dest)[0]
-
-class DFA(FA):
-    '''
-    Definite finite automata
-    '''
 
     @classmethod
     def from_nfa(cls, nfa):
@@ -134,7 +134,7 @@ class DFA(FA):
         helper = DFAHelper()
         print "start:"
         S = nfa.Eclosure(set([nfa.start]))
-        helper.addState(S, start=True,  accept=(len(nfa.accept & S) != 0))
+        helper.addState(S, start=True,  accepts=(len(nfa.accepts & S) != 0))
         
         while helper.unmarked():
             T = helper.unmarked()
@@ -153,21 +153,23 @@ class DFA(FA):
                     continue
                 
                 if not helper.hasState(U):
-                    helper.addState(U, accept=(len(nfa.accept & U) != 0))
+                    helper.addState(U, accepts=(len(nfa.accepts & U) != 0))
 
                 helper.addEdge(sym, T, U)
             
-        print helper
-        print helper.trans
+        print(helper.trans)
+        print(helper)
 
-        return cls(*trans_table(helper.trans))
+        dfa = cls(*trans_table(helper.trans))
+        dfa.helper = helper
+        return dfa
 
 
 import unittest
 from transtable import load_default
 class testDFA(unittest.TestCase):
     def runTest(self):
-        n = NFA(*load_default('t3_29'))
+        n = NFA(*load_default('t3_30'))
         d = DFA.from_nfa(n)
         d.draw()
 

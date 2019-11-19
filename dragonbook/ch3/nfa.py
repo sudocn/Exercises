@@ -54,8 +54,8 @@ def draw_graphviz(table, start, accepts):
 ################################################################################
 
 class FA(object):
-    def __init__(self, table, start, accept):
-        self.table, self.start, self.accept = table, start, accept #trans_table(tab_name)
+    def __init__(self, table, start, accepts):
+        self.table, self.start, self.accepts = table, start, accepts #trans_table(tab_name)
 
     @property
     def alphabet(self):
@@ -64,18 +64,22 @@ class FA(object):
         '''
         v = []
         for s in self.table.values():
-            v.extend(s.keys())
+            for syms in s.values():
+                v.extend(syms)
 
         res = set(v)
         return res - set(EMPTY)
 
     def draw(self):
-        draw_graphviz(self.table, self.start, self.accept)
+        draw_graphviz(self.table, self.start, self.accepts)
 
     def move(self, states, symbol):
         def move_one(table, state, symbol):
             #print "move_one", state, symbol
+            if state not in table:
+                return []
             route = table[state]
+            print("move_one:({},{}) {}".format(state, symbol, [k for k,v in route.items() if symbol in v]))
             return [k for k,v in route.items() if symbol in v]
             #return table[state].get(symbol, [])
 

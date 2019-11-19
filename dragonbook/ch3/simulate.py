@@ -32,8 +32,8 @@ def SimNFA(nfa, x):
             S = nfa.Eclosure(m)
             print "char {}, move {}, S {}".format(c, sorted(m), sorted(S))
     except IndexError as e:
-        print "finish simulate, S U F = {}".format(S & nfa.accept)
-        if S & nfa.accept:
+        print "finish simulate, S U F = {}".format(S & nfa.accepts)
+        if S & nfa.accepts:
             print "yes"
             return True
         else:
@@ -52,7 +52,11 @@ def SimDFA(dfa, x):
     
     print
     print "== Start simulating DFA =="
-    #print "alphabet:", sorted(dfa.alphabet)
+    print "alphabet:", sorted(dfa.alphabet)
+    print "transtab:", dfa.table
+    print "start:", dfa.start
+    print "accepts:", dfa.accepts
+    print "--------------------------"
 
     xlist = list(x)
     
@@ -65,8 +69,8 @@ def SimDFA(dfa, x):
             s = dfa.move(s, c)
             print " {}->  {}".format(c, s),
     except IndexError as e:
-        print "finish simulate"
-        if s in dfa.accept:
+        print "finish simulate", 's=',s, 'accepts=', dfa.accepts
+        if s in dfa.accepts:
             print "yes"
             return True
         else:
@@ -86,7 +90,7 @@ class testSimDFA(unittest.TestCase):
         nfa = NFA(*load_default('t3_30'))
         dfa = DFA.from_nfa(nfa)
         dfa.draw()
-        #print "dfa:", dfa.start, dfa.accept
+        #print "dfa:", dfa.start, dfa.accepts
         self.assertTrue(SimDFA(dfa, "aabb"))
 
 if __name__ == "__main__":

@@ -42,6 +42,57 @@ def trans_table(y):
 
     return y, start, accept
 
+def merge_subtable(parent, *sub):
+    '''
+    McNaughton-Yamada-Thompson algorithm
+    merge contents (except 'start' and 'accepts') in sub tables to parent.
+    
+    This is safe because in M-Y-T algorithm, combinations always add new 
+    transitions to exising states, seldomly changes original states. (with the
+    only exception for concatenation, see cat_table()) 
+    '''
+    #print('sub = ',sub)
+    for t in sub:
+        for src,route in t.items():
+            if src == 'start' or src == 'accepts':
+                continue
+            if src in parent:
+                parent_route = parent[src]
+                assert(parent_route, dict)
+                for dest, path in parent_route.items():
+                    if dest in route:
+                        route[dest].extend(path)    # merge if both exist
+                    else:
+                        route[dest] = path          # only in parent
+                parent[src].update(route)
+            else:
+                parent[src] = route
+    return parent
+
+def cat_table(left, right):
+    '''
+    McNaughton-Yamada-Thompson algorithm
+    b) r = st, concatenation
+    '''
+    newt = {'start':left['start'], 'accepts':right['accepts']}
+    merge_subtable(newt, left)
+
+    newright = right.copy()
+    fr,to  = right['start'], left['accepts']    # rename right[start] to left[accepts] (merge)
+    #
+    # 2 possible places: outter key, inner key
+    #
+    # rename outter name
+    if fr in newright:
+        newright[to] = newright.pop(fr)    
+    # rename inner names
+    for k, v in newright.items(): # outter dict
+        if k == 'start' or k == 'accepts':
+            continue
+        if fr in v:     # inner dict
+            v[to] = v.pop(fr)
+    return merge_subtable(newt, newright)
+
 def load_default(name):
     with open('tables.yaml') as f:
         ydict = yaml.load(f)
@@ -52,6 +103,17 @@ def load_default(name):
         print(v)
     '''
     return trans_table(ydict[name])
+
+#
+#
+#
+import unittest
+class TCaseTableOp(unittest.TestCase):
+    def test_merge(self):
+        t1 = {'start': 'r1s', 'accepts': 'r2e', 'r1s': {'r1e': 'a'}}
+        t2 = {'r1e': {'r2e': 'b'}}
+        t = merge_subtable(t1, t2)
+        print(t)
 
 if __name__ == '__main__':
     y,start,accept = trans_table('t3_26')

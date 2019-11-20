@@ -1,64 +1,10 @@
 #!/usr/bin/python
 from graphviz import Digraph
+from transtable import cat_table, merge_subtable
 
 class ParseError(Exception):
     pass
 
-
-def merge_subtable(parent, *sub):
-    #print('sub = ',sub)
-    for t in sub:
-        for k,v in t.items():
-            if k == 'start' or k == 'accepts':
-                continue
-            if k in parent:
-                assert(isinstance(parent[k], dict))
-                #parent[k] = parent[k].merge(v)
-                # TODO: seems update will flush old value, 
-                parent[k].update(v)
-            else:
-                parent[k] = v
-    return parent
-
-def cat_table(left, right):
-    '''
-    for  r = st, concatenation
-    '''
-    newt = {'start':left['start'], 'accepts':right['accepts']}
-    merge_subtable(newt, left)
-
-    newright = {}
-    fr,to  = right['start'], left['accepts']    # rename right[start] to left[accepts]
-    #
-    # 3 possible places: outter key, inner key, inner value
-    #
-    #print('right: {}'.format(right))
-    for k, v in right.items(): # outter dict
-        #print("outer: {},{}".format(k,v))
-        if k == 'start' or k == 'accepts':
-            continue
-        if k == fr:
-            k = to
-        
-        if isinstance(v, dict):
-            inner = {}
-            for ik, iv in v.items():    # inner dict
-                if ik == fr: ik = to
-                # inner value may be a list
-                if isinstance(iv, list):
-                    iv = [to if x == fr else x for x in iv]
-                else:   # iv is a scalar
-                    if iv == fr:
-                        iv = to
-                inner[ik] = iv 
-            newright[k] = inner
-        else:   # v is a scalar
-            newright[k] = to if v == fr else v
-
-        #print("newright",newright)
-        #print("newt", newt)
-        #print('merged', merge_subtable(newt, newright))
-    return merge_subtable(newt, newright)
 
 '''
 Considering the most basic regular experssion, has 3 operations:
@@ -213,15 +159,6 @@ class Term(Node):
         rt = self.children[1].transtable()
         table = cat_table(lt, rt)
         print('Term: ', table)
-        '''
-        mnode = lt['accepts'] + '.' + rt['start']
-        s,e = self.name+'s',self.name+'e'
-        table = {
-            'start':lt['start'], 
-            'accepts':rt['accepts'], 
-        }
-        merge_subtable(table, lt, rt)
-        '''
         return table
 
 class Expr(Node):
@@ -450,13 +387,6 @@ class TCaseRegexConverter(unittest.TestCase):
         nfa.draw()
         dfa = DFA.from_nfa(nfa)
         dfa.draw()
-
-class TCaseTableOp(unittest.TestCase):
-    def test_merge(self):
-        t1 = {'start': 'r1s', 'accepts': 'r2e', 'r1s': {'r1e': 'a'}}
-        t2 = {'r1e': {'r2e': 'b'}}
-        t = merge_subtable(t1, t2)
-        print(t)
 
 if __name__ == '__main__':
         print Regex('(a*|b*)*').getClosure()

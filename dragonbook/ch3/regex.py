@@ -369,7 +369,8 @@ class TCaseRegexConverter(unittest.TestCase):
         from transtable import trans_table
         conv = RegexConverter()
         #tree  = Regex.parse("a(b|c)*d|efg")#|c*")
-        tree  = Regex.parse("(a|b)*abb")#|c*")
+        #tree  = Regex.parse("(a|b)*abb")#|c*")
+        tree  = Regex.parse("(a|b)*abb(a|b)*")#|c*")
         table = conv.toNFATable(tree)
         t, s, e = trans_table(table)
         print("start",s)
@@ -381,7 +382,10 @@ class TCaseRegexConverter(unittest.TestCase):
         from dfa import DFA
         from transtable import trans_table
         conv = RegexConverter()
-        tree  = Regex.parse("(a|b)*abb")#|c*")
+        #restr = "(a|b)*abb"
+        restr = "(a|b)*abb(a|b)*"
+        #restr = "((E|a)b*)*"
+        tree  = Regex.parse(restr)
         table = conv.toNFATable(tree)
         nfa = NFA(*trans_table(table))
         nfa.draw()

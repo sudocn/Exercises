@@ -5,7 +5,7 @@ from transtable import trans_table, load_default
 
 EMPTY = 'E'
 
-def draw_graphviz(table, start, accepts):
+def draw_graphviz(table, start, accepts, name='NFA'):
     '''
     Draw a NFA graph by transition table
     table: transition table
@@ -13,19 +13,22 @@ def draw_graphviz(table, start, accepts):
     accepts: accepting states
     '''
 
-    g = Digraph('NFA', filename='NFA.gv',
-                graph_attr={'rankdir': 'LR', 'newrank':'true'},
+    g = Digraph('NFA', filename=name+'.gv',
+                graph_attr={'rankdir': 'LR'},# 'newrank':'true'},
                 node_attr={'shape':'circle', 'fontname':'Source Code Pro'},
                 edge_attr={'arrowhead':'normal', 'fontname':'Source Code Pro'})
 
     assert(isinstance(start, str))
-    # create states
-    for s in accepts:
-        g.node(str(s), shape='doublecircle')
-
+    print("\n== Draw graphviz ==")
     # add start arrow
+    print("start node {}".format(start))
     g.node('start', shape='none')
     g.edge('start', start)
+
+    # create states
+    for s in accepts:
+        print("accept node {}".format(s))
+        g.node(str(s), shape='doublecircle')
 
     # add tranistions
     #g.edges(['01', '12', '14', '23', '45', '36', '56', '67'])
@@ -33,7 +36,7 @@ def draw_graphviz(table, start, accepts):
         if trans is None: continue
         for dest, symbol_list in trans.items():
             for symbol in symbol_list:
-                print "adding {} -{}-> {}".format(src, symbol, dest)
+                print("edge {} -{}-> {}".format(src, symbol, dest))
                 '''
                 g.edge(src, dest, symbol,
                        constraint = 'false' if symbol == 'E' else 'true'
@@ -46,6 +49,7 @@ def draw_graphviz(table, start, accepts):
     #g.edge('6', '1', 'E', constraint='false')
 
     # draw 
+    print("----  graphviz ----")
     g.view()
 
 ################################################################################
@@ -72,7 +76,7 @@ class FA(object):
         return res - set(EMPTY)
 
     def draw(self):
-        draw_graphviz(self.table, self.start, self.accepts)
+        draw_graphviz(self.table, self.start, self.accepts, self.__class__.__name__)
 
 
     def move_one(self, state, symbol):
@@ -80,19 +84,17 @@ class FA(object):
         if state not in self.table:
             return []
         route = self.table[state]
-        print("move_one:({},{}) {}".format(state, symbol, [k for k,v in route.items() if symbol in v]))
+        print("    move_one:({},{}) {}".format(state, symbol, [k for k,v in route.items() if symbol in v]))
         return [k for k,v in route.items() if symbol in v]
         #return table[state].get(symbol, [])
 
     def move(self, states, symbol):
 
-        print("move -1--- states", states)
         if isinstance(states, list):
             raise Exception("states must be set")
     
         #if not isinstance(states, set):
         #    states = set( states )
-        print("move -2--- states", states)
         r = []
         [ r.extend(self.move_one(s, symbol)) for s in states ]
         #print r

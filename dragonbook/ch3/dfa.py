@@ -141,9 +141,9 @@ class DFA(FA):
             helper.mark(T)
             print "\nstate {} : {}".format(helper.stateName(T), sorted(T))
             for sym in nfa.alphabet:
-                print sym + ":"
+                print("  move({}, {}):".format(helper.stateName(T), sym))
                 M = nfa.move(T, sym)
-                print "  move({}, {}) = {}".format(helper.stateName(T), sym, sorted(M))
+                print("  move({}, {}) = {}".format(helper.stateName(T), sym, sorted(M)))
                 U = nfa.Eclosure(M)
                 #print "  e-closure({}) = {}".format(sorted(M), sorted(U))
 

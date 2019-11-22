@@ -393,13 +393,9 @@ class TCaseRegexConverter(unittest.TestCase):
         dfa.draw()
 
 if __name__ == '__main__':
-        print Regex('(a*|b*)*').getClosure()
-        #re = 'ab*cd|ef*g*hi*j|k'
-        re = '(a|b)*abb'
-        #re = '(a*|b*)*'
-        #re = '((E|a)b*)*'
-        #re = '(a|b)*abb(a|b)*'
-        expr = Regex.parse(re)
-
-        draw_graphviz(expr)
+    import sys
+    re = '(a|b)*abb' if len(sys.argv) == 1 else sys.argv[1]
+    expr = Regex.parse(re)
+    print(expr)
+    draw_graphviz(expr)
 

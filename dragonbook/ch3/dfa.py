@@ -174,4 +174,9 @@ class testDFA(unittest.TestCase):
         d.draw()
 
 if __name__ == "__main__":
-    unittest.main()
+    import sys
+    if len(sys.argv) > 1:
+        nfa = NFA(*load_default(sys.argv[1]))
+        dfa = DFA.from_nfa(nfa)
+        dfa.draw()
+

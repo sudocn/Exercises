@@ -132,7 +132,6 @@ class TCaseNfa(unittest.TestCase):
         draw_graphviz(t,s,a)
 
 if __name__ == "__main__":
-       fa_draw(trans)
-
-       #draw(t3_26)
-       #fa_draw(t3_30)
+    import sys
+    if len(sys.argv) > 1:
+        NFA(*load_default(sys.argv[1])).draw()

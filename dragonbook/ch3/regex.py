@@ -34,16 +34,31 @@ def unique_name(prefix):
 def draw_node(g, node):
     #s = node.name
     if node.isLeaf():
+        assert(isinstance(node, Atom))
+        if node.ast:
+            return  # Leaf node has nothing to do in AST
         # need labels otherwise we will have duplicate names
         g.node('a'+node.name, label=node.id)
         g.edge(node.name, 'a'+node.name)
     else:
+        frm = node.name
         for e in node.children:
+            assert(e.ast == node.ast)    # chilren inherit parent's ast attribut
             draw_node(g, e)
-            print("add edge {}->{}".format(node.name, e.name))
-            g.edge(node.name, e.name)
+
+            to = e.name
+            if e.ast:
+                if e.isLeaf():
+                    assert(isinstance(e, Atom))
+                    label = e.id
+                else:
+                    label = e.op
+                g.node(e.name, label)
+
+            print("add edge {}->{}".format(frm, to))
+            g.edge(frm, to)
     
-def draw_graphviz(node):
+def draw_graphviz(root):
     '''
     Draw a NFA graph by transition table
     table: transition table
@@ -56,7 +71,9 @@ def draw_graphviz(node):
                 node_attr={'shape':'none', 'fontname':'Source Code Pro'},
                 edge_attr={'arrowhead':'none', 'fontname':'Source Code Pro'})
 
-    draw_node(g,node)
+    if root.ast:
+        g.node(root.name, root.op)
+    draw_node(g,root)
 
     g.view()
 
@@ -68,10 +85,23 @@ class Node(object):
     type = 'NODE'
     def __init__(self, name=None):
         self._name = name
+        self.ast = False    # this node is in an AST (if Ture) or CST (False, default)
         self.children = []
 
     def isLeaf(self):
         return not self.children
+
+    def toAST(self):
+        '''
+        transform CST tree to AST
+        '''
+        self.ast = True
+        if not self.isLeaf():
+            for i,c in enumerate(self.children):
+                if isinstance(c, Bracket):
+                    self.children[i] = c.children[0]
+            for c in self.children:
+                c.toAST()
     
     def transtable(self):
         return {'start':'unimplemented', 'accepts':'unimplemented'}
@@ -337,26 +367,28 @@ class TCaseRegexString(unittest.TestCase):
             print('term: {} -> {}'.format(txt, t))
 
     def test_getExpr(self):
-        arr = [
-            'a|b',
-            'a*|b*|c',
-            'a*b*|c',
-            'a*b*c',
-            'abcdefghijk'
+
+        arr_cst = [
+            ('a|b',     '|(a,b)'),
+            ('a*|b*|c', '|(|(*(a),*(b)),c)'),
+            ('a*b*|c',  '|(+(*(a),*(b)),c)'),
+            ('a*b*c',   '+(+(*(a),*(b)),c)'),
+            ('abcdefghijk','+(+(+(+(+(+(+(+(+(+(a,b),c),d),e),f),g),h),i),j),k)')
         ]
-        for txt in arr:
+        for txt,result in arr_cst:
             re = Regex(txt)
             t = re.getExpr()
             print('expr: {} -> {}'.format(txt, t))
+            self.assertEqual(str(t),result)
 
-    def test_para(self):
+    def test_bracket(self):
         arr = [
-            'a(b)',
-            '(ab)*',
-            '(ab)|b*|c',
-            'a*(b*|c)*',
-            'a*(b|c)*d',
-            'abcdefghijk'
+            ('a(b)',        '+(a,@(b))'),
+            ('(ab)*',       '*(@(+(a,b)))'),
+            ('(ab)|b*|c',   '|(|(@(+(a,b)),*(b)),c)'),
+            ('a*(b*|c)*',   '+(*(a),*(@(|(*(b),c))))'),
+            ('a*(b|c)*d',   '+(+(*(a),*(@(|(b,c)))),d)'),
+            ('(a)b(c(d(e(f)(g)h)i))(j)k', '+(+(+(+(@(a),b),@(+(c,@(+(+(d,@(+(+(+(e,@(f)),@(g)),h))),i))))),@(j)),k)')
         ]
         for txt in arr:
             re = Regex(txt)
@@ -364,7 +396,7 @@ class TCaseRegexString(unittest.TestCase):
             print('expr: {} -> {}'.format(txt, t))
 
 class TCaseRegexConverter(unittest.TestCase):
-    def test_toNFA(sef):
+    def test_toNFA(self):
         import nfa
         from transtable import trans_table
         conv = RegexConverter()
@@ -377,7 +409,7 @@ class TCaseRegexConverter(unittest.TestCase):
         print("accepts",e)
         nfa.draw_graphviz(table, s, e)
 
-    def test_toDFA(sef):
+    def test_toDFA(self):
         from nfa import NFA
         from dfa import DFA
         from transtable import trans_table
@@ -394,8 +426,10 @@ class TCaseRegexConverter(unittest.TestCase):
 
 if __name__ == '__main__':
     import sys
-    re = '(a|b)*abb' if len(sys.argv) == 1 else sys.argv[1]
+    re = '(a|b)*abb#' if len(sys.argv) == 1 else sys.argv[1]
     expr = Regex.parse(re)
-    print(expr)
+    print('cst:{}'.format(expr))
+    expr.toAST()
+    print('ast:{}'.format(expr))
     draw_graphviz(expr)
 

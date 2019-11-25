@@ -82,7 +82,6 @@ class Node(object):
     A RE node (regular expression node) base class
     '''
     global_index = 0
-    type = 'NODE'
     def __init__(self, name=None):
         self._name = name
         self.ast = False    # this node is in an AST (if Ture) or CST (False, default)
@@ -113,13 +112,6 @@ class Node(object):
         return self._name
         
     def __str__(self):
-        '''
-        res = '{}('.format(self.type)
-        for child in self.children:
-            res += '{},'.format(child)
-        
-        return res[:-1] + ')'
-        '''
         return '{}({})'.format(self.op, ','.join(map(str, self.children)))
 
     @classmethod
@@ -137,7 +129,6 @@ class Atom(Node):
     1. a single char
     2. a expression enclose by '()'
     '''
-    type = 'ATOM'
     def __init__(self, c):
         super(Atom, self).__init__()
         self.id = c
@@ -147,11 +138,9 @@ class Atom(Node):
         return {'start':s, 'accepts':e, s:{e:self.id}}
 
     def __str__(self):
-        #return "{}({})".format(self.type, self.id)
         return self.id
 
 class Closure(Node):
-    type = 'CLOSURE'
     op = '*'
     def __init__(self, node):
         super(Closure, self).__init__()
@@ -169,14 +158,10 @@ class Closure(Node):
         table['accepts'] = e
         return table
 
-    #def __str__(self):
-    #    return "{}({}*)".format(self.type, self.children[0])
-
 class Term(Node):
     '''
     All operation except Union '|'
     '''
-    type = 'TERM'
     op = '+'
     def __init__(self, L, R):
         super(Term, self).__init__()
@@ -194,7 +179,6 @@ class Term(Node):
 class Expr(Node):
     '''
     '''
-    type = 'EXPR'
     op = '|'
     def __init__(self, L, R):
         super(Expr, self).__init__()
@@ -217,7 +201,6 @@ class Expr(Node):
         return table
     
 class Bracket(Node):
-    type = 'PARA'
     op = '@'	# should be '()', use @ for readability
     def __init__(self, node):
         super(Bracket, self).__init__()

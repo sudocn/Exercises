@@ -38,7 +38,7 @@ def draw_node(g, node):
         if node.ast:
             return  # Leaf node has nothing to do in AST
         # need labels otherwise we will have duplicate names
-        g.node('a'+node.name, label=node.id)
+        g.node('a'+node.name, label=node.symbol)
         g.edge(node.name, 'a'+node.name)
     else:
         frm = node.name
@@ -50,7 +50,7 @@ def draw_node(g, node):
             if e.ast:
                 if e.isLeaf():
                     assert(isinstance(e, Atom))
-                    label = e.id
+                    label = e.symbol
                 else:
                     label = e.op
                 g.node(e.name, label)
@@ -131,14 +131,14 @@ class Atom(Node):
     '''
     def __init__(self, c):
         super(Atom, self).__init__()
-        self.id = c
+        self.symbol = c
 
     def transtable(self):
         s,e = self.name+'s',self.name+'e'
-        return {'start':s, 'accepts':e, s:{e:self.id}}
+        return {'start':s, 'accepts':e, s:{e:self.symbol}}
 
     def __str__(self):
-        return self.id
+        return self.symbol
 
 class Closure(Node):
     op = '*'

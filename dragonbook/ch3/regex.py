@@ -34,7 +34,7 @@ def unique_name(prefix):
 def draw_node(g, node):
     #s = node.name
     if node.isLeaf():
-        assert(isinstance(node, Atom))
+        assert(isinstance(node, AtomNode))
         if node.ast:
             return  # Leaf node has nothing to do in AST
         # need labels otherwise we will have duplicate names
@@ -49,7 +49,7 @@ def draw_node(g, node):
             to = e.name
             if e.ast:
                 if e.isLeaf():
-                    assert(isinstance(e, Atom))
+                    assert(isinstance(e, AtomNode))
                     label = e.symbol
                 else:
                     label = e.op
@@ -124,26 +124,42 @@ class Node(object):
         cls.global_index += 1
         return name
     
-class Atom(Node):
+class AtomNode(Node):
     '''
     1. a single char
     2. a expression enclose by '()'
     '''
     def __init__(self, c):
-        super(Atom, self).__init__()
+        super(AtomNode, self).__init__()
         self.symbol = c
 
     def transtable(self):
         s,e = self.name+'s',self.name+'e'
         return {'start':s, 'accepts':e, s:{e:self.symbol}}
 
+    def nulllable(self):
+        pass
+    
+    def firstpos(self):
+        pass
+
+    def lastpos(self):
+        pass
+
+    def followpos(self):
+        pass
+
     def __str__(self):
         return self.symbol
 
-class Closure(Node):
+class StarNode(Node):
+    '''
+    Closure
+    closure -> atom* | atom
+    '''
     op = '*'
     def __init__(self, node):
-        super(Closure, self).__init__()
+        super(StarNode, self).__init__()
         self.children.append(node)
 
     def transtable(self):
@@ -158,13 +174,27 @@ class Closure(Node):
         table['accepts'] = e
         return table
 
-class Term(Node):
+    def nulllable(self):
+        pass
+    
+    def firstpos(self):
+        pass
+
+    def lastpos(self):
+        pass
+
+    def followpos(self):
+        pass
+
+class CatNode(Node):
     '''
+    cat
+    term -> term closure | closure
     All operation except Union '|'
     '''
     op = '+'
     def __init__(self, L, R):
-        super(Term, self).__init__()
+        super(CatNode, self).__init__()
 
         self.children.append(L)
         self.children.append(R)
@@ -176,12 +206,26 @@ class Term(Node):
         print('Term: ', table)
         return table
 
-class Expr(Node):
+    def nulllable(self):
+        pass
+    
+    def firstpos(self):
+        pass
+
+    def lastpos(self):
+        pass
+
+    def followpos(self):
+        pass
+
+class OrNode(Node):
     '''
+    or
+    expr -> expr '|' term | term 
     '''
     op = '|'
     def __init__(self, L, R):
-        super(Expr, self).__init__()
+        super(OrNode, self).__init__()
 
         self.children.append(L)
         self.children.append(R)
@@ -199,8 +243,23 @@ class Expr(Node):
         }
         merge_subtable(table, lt, rt)
         return table
+
+    def nulllable(self):
+        pass
     
+    def firstpos(self):
+        pass
+
+    def lastpos(self):
+        pass
+
+    def followpos(self):
+        pass
+
 class Bracket(Node):
+    '''
+    Only CST has this type of node, AST does not
+    '''
     op = '@'	# should be '()', use @ for readability
     def __init__(self, node):
         super(Bracket, self).__init__()
@@ -246,14 +305,14 @@ class Regex(object):
             #return None
             raise ParseError('getAtom: {} is not an atom, remain str {}'.format(c, ''.join(self.content)))
         else:
-            return Atom(c)
+            return AtomNode(c)
 
     def getClosure(self):
         atom = self.getAtom()
         if not atom: return None
         if self.peek() == '*':
             self.getc()
-            return Closure(atom)
+            return StarNode(atom)
         else:
             return atom
 
@@ -267,7 +326,7 @@ class Regex(object):
             right = self.getClosure()
             if not right:
                 break
-            left = Term(left, right)
+            left = CatNode(left, right)
             #right = self.getClosure()
         return left
 
@@ -284,7 +343,7 @@ class Regex(object):
             right = self.getTerm()
             if not right:
                 raise ParseError('getExpr: no term find after |, str {}'.format(''.join(self.content)))
-            left = Expr(left, right)
+            left = OrNode(left, right)
         return left
 
     @classmethod

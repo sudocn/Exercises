@@ -143,7 +143,7 @@ NOTES:
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+	     return ~(~(~x & y) & ~(x & ~y));
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -152,9 +152,7 @@ int bitXor(int x, int y) {
  *   Rating: 1
  */
 int tmin(void) {
-
-  return 2;
-
+	return 1<<31;
 }
 //2
 /*
@@ -165,7 +163,8 @@ int tmin(void) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+	//printf("\n-%x-\n", (~1^x));
+	return !( (~0^x) + ~x ) & !!(x+1);
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -176,7 +175,9 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+	int a;
+	a = (0xaa) | (0xaa << 8) | (0xaa << 16) | (0xaa << 24);
+	return !((x&a)^a);
 }
 /* 
  * negate - return -x 
@@ -186,7 +187,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return ~x + 1;
 }
 //3
 /* 
@@ -199,7 +200,13 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+	int flg1, flg2, flg3;
+
+	flg1 = !(x & ~0x3f);
+	flg2 = !( (x & 0x38) ^ 0x30); 
+	flg3 = !(x ^ 0x38) | !(x ^ 0x39);
+	//printf("%x: hnib %x, lnib %x\n",x, hflg, lflg);
+	return flg1 & (flg2 | flg3);
 }
 /* 
  * conditional - same as x ? y : z 

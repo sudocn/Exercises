@@ -89,7 +89,7 @@ class Node(object):
 
     def isLeaf(self):
         return not self.children
-
+    
     def toAST(self):
         '''
         transform CST tree to AST
@@ -104,6 +104,14 @@ class Node(object):
     
     def transtable(self):
         return {'start':'unimplemented', 'accepts':'unimplemented'}
+
+    @property
+    def left(self):
+        return self.children[0]
+    
+    @property
+    def right(self):
+        return self.children[1]
 
     @property
     def name(self):
@@ -132,19 +140,20 @@ class AtomNode(Node):
     def __init__(self, c):
         super(AtomNode, self).__init__()
         self.symbol = c
+        self.id = 0     # position in AST
 
     def transtable(self):
         s,e = self.name+'s',self.name+'e'
         return {'start':s, 'accepts':e, s:{e:self.symbol}}
 
     def nulllable(self):
-        pass
+        return False if self.symbol != 'E' else True
     
     def firstpos(self):
-        pass
+        return set() if self.nulllable() else set(self.id)
 
     def lastpos(self):
-        pass
+        return self.firstpos()
 
     def followpos(self):
         pass
@@ -163,7 +172,7 @@ class StarNode(Node):
         self.children.append(node)
 
     def transtable(self):
-        table = self.children[0].transtable().copy()
+        table = self.left.transtable().copy()
         os,oe = table['start'],table['accepts']
         s,e = self.name+'s',self.name+'e'
         merge_subtable(table, 
@@ -174,14 +183,18 @@ class StarNode(Node):
         table['accepts'] = e
         return table
 
+    @property
+    def right(self):
+        raise Exception("Start Node has no right child")
+
     def nulllable(self):
-        pass
+        return True
     
     def firstpos(self):
-        pass
+        return self.left.firstpos()
 
     def lastpos(self):
-        pass
+        return self.left.lastpos()
 
     def followpos(self):
         pass
@@ -200,20 +213,26 @@ class CatNode(Node):
         self.children.append(R)
 
     def transtable(self):
-        lt = self.children[0].transtable()
-        rt = self.children[1].transtable()
+        lt = self.left.transtable()
+        rt = self.right.transtable()
         table = cat_table(lt, rt)
         print('Term: ', table)
         return table
 
     def nulllable(self):
-        pass
-    
+        return self.left.nulllable() and self.right.nulllable()
+
     def firstpos(self):
-        pass
+        if self.left.nulllable():
+            return self.left.firstpos() | self.right.firstpos()
+        else:
+            return self.left.firstpos()    
 
     def lastpos(self):
-        pass
+        if self.right.nulllable():
+            return self.left.lastpos() | self.right.lastpos()
+        else:
+            return self.right.lastpos()    
 
     def followpos(self):
         pass
@@ -231,8 +250,8 @@ class OrNode(Node):
         self.children.append(R)
     
     def transtable(self):
-        lt = self.children[0].transtable()
-        rt = self.children[1].transtable()
+        lt = self.left.transtable()
+        rt = self.right.transtable()
         s,e = self.name+'s',self.name+'e'
         table = {
             'start':s, 
@@ -245,13 +264,13 @@ class OrNode(Node):
         return table
 
     def nulllable(self):
-        pass
+        return self.left.nulllable() or self.right.nulllable()
     
     def firstpos(self):
-        pass
+        return self.left.firstpos() | self.right.firstpos()
 
     def lastpos(self):
-        pass
+        return self.left.lastpos() | self.right.lastpos()
 
     def followpos(self):
         pass
@@ -266,7 +285,11 @@ class Bracket(Node):
         self.children.append(node)
 
     def transtable(self):
-        return self.children[0].transtable()
+        return self.left.transtable()
+
+    @property
+    def right(self):
+        raise Exception("Bracket Node has no right child")
     
 #
 #

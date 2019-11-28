@@ -86,6 +86,7 @@ class Node(object):
         self._name = name
         self.ast = False    # this node is in an AST (if Ture) or CST (False, default)
         self.children = []
+        self._followpos = set()
 
     def isLeaf(self):
         return not self.children
@@ -104,6 +105,11 @@ class Node(object):
     
     def transtable(self):
         return {'start':'unimplemented', 'accepts':'unimplemented'}
+
+    def traverse(self, func):
+        for child in self.children:
+            child.traverse(func)
+        func(self)
 
     @property
     def left(self):
@@ -150,7 +156,7 @@ class AtomNode(Node):
         return False if self.symbol != 'E' else True
     
     def firstpos(self):
-        return set() if self.nulllable() else set(self.id)
+        return set() if self.nulllable() else set((self.id,))
 
     def lastpos(self):
         return self.firstpos()
@@ -386,19 +392,49 @@ class Regex(object):
 
 
 class RegexConverter(object):
-    def traverse(self, node, func):
-        for child in node.children:
-            self.traverse(child, func)
-        func(node)        
-
-    def toNFATable(self, root):
+    @staticmethod
+    def toNFATable(root):
         def proc(n):
             print("t:"+n.name, n.transtable())
-        self.traverse(root, proc)
+        root.traverse(proc)
 
         table = root.transtable()
         print('toNFATable', table)
         return table
+
+    @staticmethod
+    def toDFA(root):
+        impt_states = []
+        def addleaf(x):
+            if x.isLeaf():
+                impt_states.append(x)
+
+        def followpos(s):
+            if isinstance(s, CatNode):
+                left_last = s.left.lastpos()
+                right_first = s.right.firstpos()
+                for i in left_last:
+                    impt_states[i]._followpos |= right_first
+            elif isinstance(s, StarNode):
+                last = s.lastpos()
+                first = s.firstpos()
+                for i in last:
+                    impt_states[i]._followpos |= first
+            
+        root.traverse(addleaf)
+        for i,v in enumerate(impt_states):  # numbering
+            v.id = i
+        
+        #calc_followpos(impt_states)
+
+        root.traverse(followpos)
+        for x in impt_states:
+            print(" {}: {} {} {} / {}".format(
+                x.id,   
+                x.symbol, 
+                [m for m in x.firstpos()], 
+                [m for m in x.lastpos()], 
+                [m for m in x._followpos]))
 
 
 #
@@ -464,11 +500,10 @@ class TCaseRegexConverter(unittest.TestCase):
     def test_toNFA(self):
         import nfa
         from transtable import trans_table
-        conv = RegexConverter()
         #tree  = Regex.parse("a(b|c)*d|efg")#|c*")
-        #tree  = Regex.parse("(a|b)*abb")#|c*")
-        tree  = Regex.parse("(a|b)*abb(a|b)*")#|c*")
-        table = conv.toNFATable(tree)
+        tree  = Regex.parse("(a|b)*abb#")#|c*")
+        #tree  = Regex.parse("(a|b)*abb(a|b)*")#|c*")
+        table = RegexConverter.toNFATable(tree)
         t, s, e = trans_table(table)
         print("start",s)
         print("accepts",e)
@@ -478,16 +513,21 @@ class TCaseRegexConverter(unittest.TestCase):
         from nfa import NFA
         from dfa import DFA
         from transtable import trans_table
-        conv = RegexConverter()
         #restr = "(a|b)*abb"
         restr = "(a|b)*abb(a|b)*"
         #restr = "((E|a)b*)*"
         tree  = Regex.parse(restr)
-        table = conv.toNFATable(tree)
+        table = RegexConverter.toNFATable(tree)
         nfa = NFA(*trans_table(table))
         nfa.draw()
         dfa = DFA.from_nfa(nfa)
         dfa.draw()
+
+class TCaseDFA(unittest.TestCase):
+    def test_firstpos(self):
+        expr = Regex.parse("(a|b)*abb#")
+        expr.toAST()
+        print(expr.firstpos())
 
 if __name__ == '__main__':
     import sys
@@ -496,5 +536,14 @@ if __name__ == '__main__':
     print('cst:{}'.format(expr))
     expr.toAST()
     print('ast:{}'.format(expr))
-    draw_graphviz(expr)
+    #draw_graphviz(expr)
+
+    RegexConverter.toDFA(expr)
+    def printnode(x):
+        print("  {} {} {} / {}".format(
+            x.name, 
+            [m for m in x.firstpos()], 
+            [m for m in x.lastpos()], 
+            [m for m in x._followpos]))
+    #expr.traverse(printnode)
 

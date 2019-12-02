@@ -216,7 +216,9 @@ int isAsciiDigit(int x) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+	int norm = !x;
+	
+	return (y & (~!norm+1)) | (z & (~norm+1));
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -226,7 +228,19 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+	int sub, equal;
+	int pp, mp; //plus, minus
+
+	equal = !(x ^ y);
+	sub = x + ~y + 1;
+
+	// p - p = m || m - m = m
+	pp = ((sub >> 31)) & !( (x ^ y) >> 31 );
+	// m - p
+	mp = (x>>31) & !(y>>31);
+
+	//printf("%d - %d = %d (%x)\n", x, y, sub, sub);
+	return pp | mp | equal;
 }
 //4
 /* 
@@ -238,7 +252,14 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+
+	x = x | x >> 16;
+	x = x | x >> 8;
+	x = x | x >> 4;
+	x = x | x >> 2;
+	x = x | x >> 1;
+	
+  return ~x & 1;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -253,6 +274,15 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
+	int byte;
+	int count;
+
+	B0 = x & 0xff;
+	B1 = (x>>8) & 0xff;
+	B2 = (x>>16) & 0xff;
+	B3 = (x>>24);
+
+	
   return 0;
 }
 //float

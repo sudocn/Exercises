@@ -109,6 +109,12 @@ def load_default(name):
 #
 import unittest
 class TCaseTableOp(unittest.TestCase):
+    def test_load(self):
+        t,s,a = load_default('t3_29')
+        self.assertDictEqual(t, {1: {1: ['a', 'b'], 2: 'a'}, 2: {2: ['a', 'b'], 3: 'b', 0: 'E'}, '0': {'0': ['a', 'b'], '1': ['a']}})
+        self.assertEqual(s, '0')
+        self.assertSetEqual(a, {'3'})
+
     def test_merge(self):
         t1 = {'start': 'r1s', 'accepts': 'r2e', 'r1s': {'r1e': 'a'}}
         t2 = {'r1e': {'r2e': 'b'}}

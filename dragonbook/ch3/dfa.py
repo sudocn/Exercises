@@ -171,7 +171,12 @@ class testDFA(unittest.TestCase):
     def runTest(self):
         n = NFA(*load_default('t3_30'))
         d = DFA.from_nfa(n)
-        d.draw()
+        print("table:", d.table)
+        self.assertDictEqual(d.table, {'A': {'A': ['b', 'a']}})
+        try:
+            d.draw()
+        except:
+            pass
 
 if __name__ == "__main__":
     import sys

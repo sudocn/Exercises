@@ -102,6 +102,7 @@ class Node(object):
                     self.children[i] = c.children[0]
             for c in self.children:
                 c.toAST()
+        return self
     
     def transtable(self):
         return {'start':'unimplemented', 'accepts':'unimplemented'}
@@ -326,7 +327,7 @@ class Regex(object):
             end = self.content.index(')')
             txt = ''.join(self.content[:i])
             del self.content[:i+1]
-            node = Regex.parse(txt)
+            node = Regex(txt).getExpr()
             #print 'para', ''.join(self.content)
             return Bracket(node)
         elif c in '*|)':
@@ -376,8 +377,11 @@ class Regex(object):
         return left
 
     @classmethod
-    def parse(cls, re_str):
-        return cls(re_str).getExpr()
+    def parse(cls, re_str, ast=True):
+        root = cls(re_str).getExpr()
+        if ast:
+            root.toAST()
+        return root
 
     ############
     # utilities
@@ -403,7 +407,7 @@ class RegexConverter(object):
         return table
 
     @staticmethod
-    def toDFA(root):
+    def toDFA_prepare(root):
         impt_states = []
         def addleaf(x):
             if x.isLeaf():
@@ -425,8 +429,6 @@ class RegexConverter(object):
         for i,v in enumerate(impt_states):  # numbering
             v.id = i
         
-        #calc_followpos(impt_states)
-
         root.traverse(followpos)
         for x in impt_states:
             print(" {}: {} {} {} / {}".format(
@@ -436,6 +438,12 @@ class RegexConverter(object):
                 [m for m in x.lastpos()], 
                 [m for m in x._followpos]))
 
+    @staticmethod
+    def toDFA(re_str):
+        ast = Regex.parse(re_str+'#').toAST()
+        RegexConverter.toDFA_prepare(root)
+        Dstates = [root.firstpos()]
+        
 
 #
 #
@@ -491,17 +499,18 @@ class TCaseRegexString(unittest.TestCase):
             ('a*(b|c)*d',   '+(+(*(a),*(@(|(b,c)))),d)'),
             ('(a)b(c(d(e(f)(g)h)i))(j)k', '+(+(+(+(@(a),b),@(+(c,@(+(+(d,@(+(+(+(e,@(f)),@(g)),h))),i))))),@(j)),k)')
         ]
-        for txt in arr:
+        for txt,result in arr:
             re = Regex(txt)
             t = re.getExpr()
             print('expr: {} -> {}'.format(txt, t))
+            self.assertEqual(str(t), result)
 
 class TCaseRegexConverter(unittest.TestCase):
     def test_toNFA(self):
         import nfa
         from transtable import trans_table
         #tree  = Regex.parse("a(b|c)*d|efg")#|c*")
-        tree  = Regex.parse("(a|b)*abb#")#|c*")
+        tree  = Regex.parse("(a|b)*abb#", False)#|c*")
         #tree  = Regex.parse("(a|b)*abb(a|b)*")#|c*")
         table = RegexConverter.toNFATable(tree)
         t, s, e = trans_table(table)
@@ -516,7 +525,7 @@ class TCaseRegexConverter(unittest.TestCase):
         #restr = "(a|b)*abb"
         restr = "(a|b)*abb(a|b)*"
         #restr = "((E|a)b*)*"
-        tree  = Regex.parse(restr)
+        tree  = Regex.parse(restr, False)
         table = RegexConverter.toNFATable(tree)
         nfa = NFA(*trans_table(table))
         nfa.draw()
@@ -526,17 +535,14 @@ class TCaseRegexConverter(unittest.TestCase):
 class TCaseDFA(unittest.TestCase):
     def test_firstpos(self):
         expr = Regex.parse("(a|b)*abb#")
-        expr.toAST()
         print(expr.firstpos())
 
 if __name__ == '__main__':
     import sys
     re = '(a|b)*abb#' if len(sys.argv) == 1 else sys.argv[1]
     expr = Regex.parse(re)
-    print('cst:{}'.format(expr))
-    expr.toAST()
     print('ast:{}'.format(expr))
-    #draw_graphviz(expr)
+    draw_graphviz(expr)
 
     RegexConverter.toDFA(expr)
     def printnode(x):

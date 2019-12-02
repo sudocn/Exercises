@@ -86,7 +86,6 @@ class Node(object):
         self._name = name
         self.ast = False    # this node is in an AST (if Ture) or CST (False, default)
         self.children = []
-        self._followpos = set()
 
     def isLeaf(self):
         return not self.children
@@ -111,6 +110,18 @@ class Node(object):
         for child in self.children:
             child.traverse(func)
         func(self)
+
+    def firstpos(self):
+        raise Exception('Node: firstpos() must be implemented by subclass')
+
+    def lastpos(self):
+        raise Exception('Node: lastpos() must be implemented by subclass')
+
+    def followpos(self):
+        raise Exception('Node: followpos() must be implemented by subclass')
+
+    def nulllable(self):
+        raise Exception('Node: nullable() must be implemented by subclass')
 
     @property
     def left(self):
@@ -148,6 +159,7 @@ class AtomNode(Node):
         super(AtomNode, self).__init__()
         self.symbol = c
         self.id = 0     # position in AST
+        self._followpos = set()
 
     def transtable(self):
         s,e = self.name+'s',self.name+'e'
@@ -163,7 +175,7 @@ class AtomNode(Node):
         return self.firstpos()
 
     def followpos(self):
-        pass
+        return self._followpos
 
     def __str__(self):
         return self.symbol
@@ -204,7 +216,7 @@ class StarNode(Node):
         return self.left.lastpos()
 
     def followpos(self):
-        pass
+        raise Exception("NO followpos for StarNode")
 
 class CatNode(Node):
     '''
@@ -242,7 +254,7 @@ class CatNode(Node):
             return self.right.lastpos()    
 
     def followpos(self):
-        pass
+        raise Exception("NO followpos for CatNode")
 
 class OrNode(Node):
     '''
@@ -280,7 +292,7 @@ class OrNode(Node):
         return self.left.lastpos() | self.right.lastpos()
 
     def followpos(self):
-        pass
+        raise Exception("NO followpos for OrNode")
 
 class Bracket(Node):
     '''
@@ -413,7 +425,7 @@ class RegexConverter(object):
             if x.isLeaf():
                 impt_states.append(x)
 
-        def followpos(s):
+        def calc_followpos(s):
             if isinstance(s, CatNode):
                 left_last = s.left.lastpos()
                 right_first = s.right.firstpos()
@@ -429,7 +441,7 @@ class RegexConverter(object):
         for i,v in enumerate(impt_states):  # numbering
             v.id = i
         
-        root.traverse(followpos)
+        root.traverse(calc_followpos)
         for x in impt_states:
             print(" {}: {} {} {} / {}".format(
                 x.id,   
@@ -437,13 +449,60 @@ class RegexConverter(object):
                 [m for m in x.firstpos()], 
                 [m for m in x.lastpos()], 
                 [m for m in x._followpos]))
+        return impt_states
+
+    @staticmethod
+    def draw(Dtrans):
+        g = Digraph('re2dfa', filename='re2dfa.gv',
+                    graph_attr={'rankdir': 'LR', 'newrank':'true'},
+                    node_attr={'shape':'oval', 'fontname':'Source Code Pro'},
+                    edge_attr={'arrowhead':'normal', 'fontname':'Source Code Pro'})
+
+        for s,v,d in Dtrans:
+            src = ''.join([str(x) for x in s])
+            via = v
+            dest = ''.join([str(x) for x in d])
+            print('{} -{}-> {}'.format(src, via, dest))
+            g.edge(src, dest, label=via)
+
+        '''
+        if root.ast:
+            g.node(root.name, root.op)
+        draw_node(g,root)
+        '''
+        g.view()
 
     @staticmethod
     def toDFA(re_str):
-        ast = Regex.parse(re_str+'#').toAST()
-        RegexConverter.toDFA_prepare(root)
-        Dstates = [root.firstpos()]
+        alphabet = set(re_str) - set('()*|#')
+        ast = Regex.parse(re_str+'#')
+        leaves = RegexConverter.toDFA_prepare(ast)
         
+        Dtrans = [] # array for tuple of 3: (Src, via, Dest)
+        Dstates = [ast.firstpos()]
+        Dstates_marked = []
+        while Dstates:
+            S = Dstates.pop(0)
+            Dstates_marked.append(S)
+            print("S: {}".format(S))
+            for val in alphabet:
+                print('  val: {}'.format(val))
+                U = set()
+                for p in S:
+                    if leaves[p].symbol == val:
+                        print('    p: {} {}'.format(p, leaves[p]._followpos))
+                        U |= leaves[p].followpos()
+                print('    U = {}'.format(U))
+
+                if (U not in Dstates) and (U not in Dstates_marked):
+                    print('  new state {}'.format(U))
+                    Dstates.append(U)
+
+                print('  new route {} -{}-> {}'.format(S, val, U))
+                Dtrans.append((S, val, U))
+        
+        # completed
+        RegexConverter.draw(Dtrans)
 
 #
 #
@@ -542,9 +601,9 @@ if __name__ == '__main__':
     re = '(a|b)*abb#' if len(sys.argv) == 1 else sys.argv[1]
     expr = Regex.parse(re)
     print('ast:{}'.format(expr))
-    draw_graphviz(expr)
+    #draw_graphviz(expr)
 
-    RegexConverter.toDFA(expr)
+    RegexConverter.toDFA('(a|b)*abb')
     def printnode(x):
         print("  {} {} {} / {}".format(
             x.name, 

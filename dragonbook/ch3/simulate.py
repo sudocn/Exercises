@@ -15,29 +15,29 @@ def SimNFA(nfa, x):
     OUTPUT: Answer "yes" if M accepts x; "no" otherwise
     '''
     
-    print
-    print "== Start simulating NFA =="
-    print "alphabet:", sorted(nfa.alphabet)
+    print()
+    print("== Start simulating NFA ==")
+    print("alphabet:", sorted(nfa.alphabet))
 
     xlist = list(x)
     
     S = nfa.Eclosure(set([nfa.start]))
-    print "start: {}".format(sorted(S))
+    print("start: {}".format(sorted(S)))
 
     try:
         while True:
-            print
+            print()
             c = xlist.pop(0)
             m = nfa.move(S, c)
             S = nfa.Eclosure(m)
-            print "char {}, move {}, S {}".format(c, sorted(m), sorted(S))
+            print("char {}, move {}, S {}".format(c, sorted(m), sorted(S)))
     except IndexError as e:
-        print "finish simulate, S U F = {}".format(S & nfa.accepts)
+        print("finish simulate, S U F = {}".format(S & nfa.accepts))
         if S & nfa.accepts:
-            print "yes"
+            print("yes")
             return True
         else:
-            print "no"
+            print("no")
             return False
 
 def SimDFA(dfa, x):
@@ -50,31 +50,31 @@ def SimDFA(dfa, x):
     OUTPUT: Answer "yes" if D accepts x; "no" otherwise
     '''
     
-    print
-    print "== Start simulating DFA =="
-    print "alphabet:", sorted(dfa.alphabet)
-    print "transtab:", dfa.table
-    print "start:", dfa.start
-    print "accepts:", dfa.accepts
-    print "--------------------------"
+    print()
+    print ("== Start simulating DFA ==")
+    print ("alphabet:", sorted(dfa.alphabet))
+    print ("transtab:", dfa.table)
+    print ("start:", dfa.start)
+    print ("accepts:", dfa.accepts)
+    print ("--------------------------")
 
     xlist = list(x)
     
     s = dfa.start
-    print "start: {}".format(s),
+    print ("start: {}".format(s), end='')
 
     try:
         while True:
             c = xlist.pop(0)
             s = dfa.move(s, c)
-            print " {}->  {}".format(c, s),
+            print (" {}->  {}".format(c, s), end='')
     except IndexError as e:
-        print "finish simulate", 's=',s, 'accepts=', dfa.accepts
+        print ("finish simulate", 's=',s, 'accepts=', dfa.accepts)
         if s in dfa.accepts:
-            print "yes"
+            print ("yes")
             return True
         else:
-            print "no"
+            print ("no")
             return False
         
 import unittest
@@ -90,7 +90,7 @@ class testSimDFA(unittest.TestCase):
         nfa = NFA(*load_default('t3_30'))
         dfa = DFA.from_nfa(nfa)
         dfa.draw()
-        #print "dfa:", dfa.start, dfa.accepts
+        #print ("dfa:", dfa.start, dfa.accepts)
         self.assertTrue(SimDFA(dfa, "aabb"))
 
 if __name__ == "__main__":

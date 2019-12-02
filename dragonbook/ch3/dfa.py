@@ -76,7 +76,7 @@ class DFAHelper(object):
         if accepts:
             self.trans["accepts"].append(st.name)
 
-        print "  new State: {} {}".format(st.name, sorted(Tset))
+        print ("  new State: {} {}".format(st.name, sorted(Tset)))
         self.index += 1
 
     def _getState(self, Tset):
@@ -99,7 +99,7 @@ class DFAHelper(object):
     def addEdge(self, sym, src, dst):
         src_name = self.stateName(src)
         dst_name = self.stateName(dst)
-        print "  new Edge: {} {}-> {} ".format(src_name, sym, dst_name)
+        print ("  new Edge: {} {}-> {} ".format(src_name, sym, dst_name))
 
         if src_name not in self.trans:
             self.trans[src_name] = {}
@@ -114,7 +114,7 @@ class DFA(FA):
 
     def move(self, state, symbol):
         if isinstance(state, set):
-            print state
+            print (state)
             raise Exception("Error: DFA move only start from exactly 1 state")
 
         dest = super(DFA, self).move(state, symbol)
@@ -127,19 +127,19 @@ class DFA(FA):
         '''
         translate NFA to DFA, only use python set (DO NOT use DState)
         '''
-        print
-        print "== Start NFA to DFA converting =="
-        print "alphabet:", sorted(nfa.alphabet)
+        print()
+        print ("== Start NFA to DFA converting ==")
+        print ("alphabet:", sorted(nfa.alphabet))
 
         helper = DFAHelper()
-        print "start:"
+        print ("start:")
         S = nfa.Eclosure(set([nfa.start]))
         helper.addState(S, start=True,  accepts=(len(nfa.accepts & S) != 0))
         
         while helper.unmarked():
             T = helper.unmarked()
             helper.mark(T)
-            print "\nstate {} : {}".format(helper.stateName(T), sorted(T))
+            print ("\nstate {} : {}".format(helper.stateName(T), sorted(T)))
             for sym in nfa.alphabet:
                 print("  move({}, {}):".format(helper.stateName(T), sym))
                 M = nfa.move(T, sym)
@@ -149,7 +149,7 @@ class DFA(FA):
 
                 # remove dead states
                 if not U:
-                    print "  dead state - remove"
+                    print ("  dead state - remove")
                     continue
                 
                 if not helper.hasState(U):

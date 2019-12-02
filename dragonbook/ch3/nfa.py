@@ -117,7 +117,7 @@ class FA(object):
                     ecl.add(t)
                     stack.append(t)
 
-        print 'e-closure: {} = {} '.format(sorted(states), sorted(ecl))
+        print ('e-closure: {} = {} '.format(sorted(states), sorted(ecl)))
         return ecl
 
 class NFA(FA):

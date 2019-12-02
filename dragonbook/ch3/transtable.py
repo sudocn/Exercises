@@ -29,16 +29,16 @@ def rectify(table):
 
 def trans_table(y):
     #print yaml.dump(y)
-    print 'states:', [ x for x in y.keys() if x != 'start' and x != 'accepts']
-    print "-- y before rectify --"
-    print y
+    print('states:', [ x for x in y.keys() if x != 'start' and x != 'accepts'])
+    print("-- y before rectify --")
+    print(y)
 
     if isinstance(y['accepts'], str):   # in case there is one sole accept state
         y['accepts'] = [y['accepts']]
     start, accept =  rectify(y)
-    print "-- y after rectify --"
-    print y
-    print "start", start, "accept", accept
+    print("-- y after rectify --")
+    print(y)
+    print("start", start, "accept", accept)
 
     return y, start, accept
 

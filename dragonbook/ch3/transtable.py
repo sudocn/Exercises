@@ -7,7 +7,7 @@ def rectify(table):
     parse raw table (contains 'start', 'accepts' info) to pure transition table:
     1. start, accepts keys are removed
     2. make sure accepts is presented as list
-    3. make sure each destination items are presentd as {src: {dest:[s,...]}} format
+    3. make sure each destination items are presentd as {src: {via:[dest,...]}} format
     '''
     start = str(table.pop('start'))
     accepts = map(str, table.pop('accepts'))
@@ -53,20 +53,20 @@ def merge_subtable(parent, *sub):
     '''
     #print('sub = ',sub)
     for t in sub:
-        for src,route in t.items():
+        for src,routes in t.items():
             if src == 'start' or src == 'accepts':
                 continue
             if src in parent:
-                parent_route = parent[src]
-                assert(parent_route, dict)
-                for dest, path in parent_route.items():
-                    if dest in route:
-                        route[dest].extend(path)    # merge if both exist
+                parent_routes = parent[src]
+                #assert(parent_routes, dict)
+                for path, dest in parent_routes.items():
+                    if path in routes:
+                        routes[path].extend(dest)    # merge if both exist
                     else:
-                        route[dest] = path          # only in parent
-                parent[src].update(route)
+                        routes[path] = dest          # only in parent
+                parent[src].update(routes)
             else:
-                parent[src] = route
+                parent[src] = routes
     return parent
 
 def cat_table(left, right):
@@ -80,7 +80,7 @@ def cat_table(left, right):
     newright = right.copy()
     fr,to  = right['start'], left['accepts']    # rename right[start] to left[accepts] (merge)
     #
-    # 2 possible places: outter key, inner key
+    # 2 possible places: outter key, inner items
     #
     # rename outter name
     if fr in newright:
@@ -89,8 +89,10 @@ def cat_table(left, right):
     for k, v in newright.items(): # outter dict
         if k == 'start' or k == 'accepts':
             continue
-        if fr in v:     # inner dict
-            v[to] = v.pop(fr)
+        for ik, iv in v.items():     # loop inner dict keys
+            if fr in iv:
+                iv.remove(fr)
+                iv.append(to)
     return merge_subtable(newt, newright)
 
 def load_default(name):
@@ -111,15 +113,23 @@ import unittest
 class TCaseTableOp(unittest.TestCase):
     def test_load(self):
         t,s,a = load_default('t3_29')
-        self.assertDictEqual(t, {1: {1: ['a', 'b'], 2: 'a'}, 2: {2: ['a', 'b'], 3: 'b', 0: 'E'}, '0': {'0': ['a', 'b'], '1': ['a']}})
+        self.assertDictEqual(t, {1: {'a': [1, 2], 'b': 1}, 2: {'a': 2, 'b': [2, 3], 'E': 0}, '0': {'a': ['0', '1'], 'b': ['0']}})
         self.assertEqual(s, '0')
         self.assertSetEqual(a, {'3'})
 
     def test_merge(self):
-        t1 = {'start': 'r1s', 'accepts': 'r2e', 'r1s': {'r1e': 'a'}}
-        t2 = {'r1e': {'r2e': 'b'}}
+        t1 = {'start': '1s', 'accepts': '2e', '1s': {'a':'1e'}}
+        t2 = {'1e': {'b':'2e'}}
         t = merge_subtable(t1, t2)
         print(t)
+        self.assertDictEqual(t, {'start': '1s', 'accepts': '2e', '1s': {'a': '1e'}, '1e': {'b': '2e'}})
+
+    def test_cat(self):
+        t1 = {'start': '1s', 'accepts': '1e', '1s': {'a':'1e'}}
+        t2 = {'start': '2s', 'accepts': '2e', '2s': {'a':'2e'}}
+        t = cat_table(t1, t2)
+        print(t)
+        self.assertDictEqual(t, {'start': '1s', 'accepts': '2e', '1s': {'a': '1e'}, '1e': {'a': '2e'}})
 
 if __name__ == '__main__':
     y,start,accept = trans_table('t3_26')

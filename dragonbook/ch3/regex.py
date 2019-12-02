@@ -162,8 +162,8 @@ class AtomNode(Node):
         self._followpos = set()
 
     def transtable(self):
-        s,e = self.name+'s',self.name+'e'
-        return {'start':s, 'accepts':e, s:{e:self.symbol}}
+        s,a = self.name+'s',self.name+'a'
+        return {'start':s, 'accepts':a, s:{self.symbol:[a]}}
 
     def nulllable(self):
         return False if self.symbol != 'E' else True
@@ -192,14 +192,14 @@ class StarNode(Node):
 
     def transtable(self):
         table = self.left.transtable().copy()
-        os,oe = table['start'],table['accepts']
-        s,e = self.name+'s',self.name+'e'
+        os,oa = table['start'],table['accepts']
+        s,a = self.name+'s',self.name+'a'
         merge_subtable(table, 
-            {s:{os:'E', e:'E'}, 
-            oe:{e:'E', os: 'E'}
+            {s:{'E': [os, a]}, 
+            oa:{'E': [os, a]}
             })
         table['start'] = s
-        table['accepts'] = e
+        table['accepts'] = a
         return table
 
     @property
@@ -271,13 +271,13 @@ class OrNode(Node):
     def transtable(self):
         lt = self.left.transtable()
         rt = self.right.transtable()
-        s,e = self.name+'s',self.name+'e'
+        s,a = self.name+'s',self.name+'a'
         table = {
             'start':s, 
-            'accepts':e, 
-            s:{lt['start']:'E', rt['start']:'E'},
-            lt['accepts']:{e:'E'},
-            rt['accepts']:{e:'E'}
+            'accepts':a, 
+            s:{'E': [lt['start'], rt['start']]},
+            lt['accepts']:{'E':a},
+            rt['accepts']:{'E':a}
         }
         merge_subtable(table, lt, rt)
         return table
@@ -575,7 +575,11 @@ class TCaseRegexConverter(unittest.TestCase):
         t, s, e = trans_table(table)
         print("start",s)
         print("accepts",e)
-        nfa.draw_graphviz(table, s, e)
+        print("table",t)
+        try:
+            nfa.draw_graphviz(table, s, e)
+        except:
+            pass
 
     def test_toDFA(self):
         from nfa import NFA
@@ -587,9 +591,12 @@ class TCaseRegexConverter(unittest.TestCase):
         tree  = Regex.parse(restr, False)
         table = RegexConverter.toNFATable(tree)
         nfa = NFA(*trans_table(table))
-        nfa.draw()
         dfa = DFA.from_nfa(nfa)
-        dfa.draw()
+        try:
+            nfa.draw()
+            dfa.draw()
+        except:
+            pass
 
 class TCaseDFA(unittest.TestCase):
     def test_firstpos(self):

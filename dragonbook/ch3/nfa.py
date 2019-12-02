@@ -34,8 +34,8 @@ def draw_graphviz(table, start, accepts, name='NFA'):
     #g.edges(['01', '12', '14', '23', '45', '36', '56', '67'])
     for src, trans in table.items():
         if trans is None: continue
-        for dest, symbol_list in trans.items():
-            for symbol in symbol_list:
+        for symbol, dest_list in trans.items():
+            for dest in dest_list:
                 print("edge {} -{}-> {}".format(src, symbol, dest))
                 '''
                 g.edge(src, dest, symbol,
@@ -69,8 +69,7 @@ class FA(object):
         '''
         v = []
         for s in self.table.values():
-            for syms in s.values():
-                v.extend(syms)
+            v.extend(s.keys())
 
         res = set(v)
         return res - set(EMPTY)
@@ -83,10 +82,8 @@ class FA(object):
         #print "move_one", state, symbol
         if state not in self.table:
             return []
-        route = self.table[state]
-        print("    move_one:({},{}) {}".format(state, symbol, [k for k,v in route.items() if symbol in v]))
-        return [k for k,v in route.items() if symbol in v]
-        #return table[state].get(symbol, [])
+        print("    move_one:({},{}) {}".format(state, symbol, self.table[state].get(symbol,[])))
+        return self.table[state].get(symbol, [])
 
     def move(self, states, symbol):
 

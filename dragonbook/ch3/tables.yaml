@@ -3,100 +3,97 @@
 
 # table format:
 #   src_state:
-#     dest_state: route
+#     via1: dest_state1
+#     via2: dest_state2
 # or 
 #   src_state:
-#     dest_state: [route1, route2]
+#     via1: [dest_state1, dest_state2]
 
 t3_26:
   start: 0
   accepts: [2, 4]
   0:
-    1: E
-    3: E
+    start:
+    E: [1,3]
   1:
-    2: a
+    a: 2
   2:
-    2: a
+    accept:
+    a: 2
   3:
-    4: b
+    b: 4
   4:
-    4: b
+    b: 4
 
 t3_29:
   start: 0
   accepts: [3]
   0:
-    0: [a,b]
-    1: a
+    a: [0,1]
+    b: 0
   1:
-    1: [a,b]
-    2: a
+    a: [1,2]
+    b: 1
   2:
-    2: [a,b]
-    3: b
-    0: E
+    a: 2
+    b: [2,3]
+    E: 0
 
 t3_30:
   start: 0
   accepts: [3]
   0:
-    1: a
-    3: E
+    E: 3
+    a: 1
   1:
-    0: E
-    2: b
+    E: 0
+    b: 2
   2:
-    1: E
-    3: b
+    E: 1
+    b: 3
   3:
-    0: a
-    2: E
+    E: 2
+    a: 0
 
 t3_21:
   start: 0
   accepts: [10]
   0:
-    1: E
-    7: E
+    E: [1,7]
   1:
-    2: E
-    4: E
+    E: [2,4]
   2:
-    3: a
+    a: 3
   3:
-    6: E
+    E: 6
   4:
-    5: b
+    b: 5
   5:
-    6: E
+    E: 6
   6:
-    1: E
-    7: E
+    E: [1, 7]
   7:
-    8: a
+    a: 8
   8: 
-    9: b
+    b: 9
   9:
-    10: b
+    b: 10
 
 t3_52:
   start: 0
   accepts: [2,6,8]
   0:
-    1: E
-    3: E
-    7: E
+    E: [1,3,7]
   1:
-    2: a
+    a: 2
   3:
-    4: a
+    a: 4
   4:
-    5: b
+    b: 5
   5:
-    6: b
+    b: 6
   7:
-    7: a
-    8: b
+    a: 7
+    b: 8
   8:
-    8: b
+    b: 8

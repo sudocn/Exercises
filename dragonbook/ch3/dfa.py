@@ -44,7 +44,7 @@ class DFAHelper(object):
             if src == 'accepts' or src == 'start':
                 continue
             moves = self.trans[src]
-            content += '{} : {}\n'.format(src, ', '.join([','.join(v) + '-> ' + k for k,v in moves.items() ]))
+            content += '{} : {}\n'.format(src, ', '.join([k + '->' + v for k,v in moves.items() ]))
 
         return content
 
@@ -103,9 +103,8 @@ class DFAHelper(object):
 
         if src_name not in self.trans:
             self.trans[src_name] = {}
-        if dst_name not in self.trans[src_name]:
-            self.trans[src_name][dst_name] = []
-        self.trans[src_name][dst_name].append(sym)
+        
+        self.trans[src_name][sym] = dst_name
         
 class DFA(FA):
     '''
@@ -172,7 +171,7 @@ class testDFA(unittest.TestCase):
         n = NFA(*load_default('t3_30'))
         d = DFA.from_nfa(n)
         print("table:", d.table)
-        self.assertDictEqual(d.table, {'A': {'A': ['b', 'a']}})
+        self.assertDictEqual(d.table, {'A': {'a': ['A'], 'b': ['A']}})
         try:
             d.draw()
         except:

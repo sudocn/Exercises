@@ -83,15 +83,21 @@ class testSimNFA(unittest.TestCase):
         #nfa = NFA(t3_29)
         nfa = NFA(*load_default('t3_30'))
         self.assertTrue(SimNFA(nfa, "aabb"))
-        nfa.draw()
+        try:
+            nfa.draw()
+        except:
+            pass
 
 class testSimDFA(unittest.TestCase):
     def runTest(self):
         nfa = NFA(*load_default('t3_30'))
         dfa = DFA.from_nfa(nfa)
-        dfa.draw()
         #print ("dfa:", dfa.start, dfa.accepts)
         self.assertTrue(SimDFA(dfa, "aabb"))
+        try:
+            dfa.draw()
+        except:
+            pass
 
 if __name__ == "__main__":
     unittest.main()

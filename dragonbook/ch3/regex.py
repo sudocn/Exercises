@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 from graphviz import Digraph
 from transtable import cat_table, merge_subtable
 

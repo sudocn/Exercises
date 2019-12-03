@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import yaml
 from graphviz import Digraph
 from transtable import trans_table, load_default

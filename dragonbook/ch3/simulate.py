@@ -1,6 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #import yaml
 
+from __future__ import print_function
 from nfa import NFA
 from dfa import DFA
 from transtable import load_default

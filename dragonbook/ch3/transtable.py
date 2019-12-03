@@ -11,7 +11,7 @@ def rectify(table):
     '''
     start = str(table.pop('start'))
     accepts = map(str, table.pop('accepts'))
-    for state in table.keys():
+    for state in list(table.keys()):
         moves = table.pop(state) # moves should be a dict too
         
         # stringfy and listfy moves

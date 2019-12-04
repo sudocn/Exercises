@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from graphviz import Digraph
+from nfa import FA
 from transtable import cat_table, merge_subtable
 
 class ParseError(Exception):
@@ -452,28 +453,13 @@ class RegexConverter(object):
         return impt_states
 
     @staticmethod
-    def draw(Dtrans):
-        g = Digraph('re2dfa', filename='re2dfa.gv',
-                    graph_attr={'rankdir': 'LR', 'newrank':'true'},
-                    node_attr={'shape':'oval', 'fontname':'Source Code Pro'},
-                    edge_attr={'arrowhead':'normal', 'fontname':'Source Code Pro'})
-
-        for s,v,d in Dtrans:
-            src = ''.join([str(x) for x in s])
-            via = v
-            dest = ''.join([str(x) for x in d])
-            print('{} -{}-> {}'.format(src, via, dest))
-            g.edge(src, dest, label=via)
-
-        '''
-        if root.ast:
-            g.node(root.name, root.op)
-        draw_node(g,root)
-        '''
-        g.view()
-
-    @staticmethod
     def toDFA(re_str):
+        def stringfy(state):
+            return ''.join(str(x) for x in state)
+
+        def endnode():
+            return [n.id for n in leaves if n.symbol == '#'][0]
+
         alphabet = set(re_str) - set('()*|#')
         ast = Regex.parse(re_str+'#')
         leaves = RegexConverter.toDFA_prepare(ast)
@@ -502,7 +488,25 @@ class RegexConverter(object):
                 Dtrans.append((S, val, U))
         
         # completed
-        RegexConverter.draw(Dtrans)
+        # Draw
+        from collections import defaultdict
+        transtable = defaultdict(dict)
+        start = stringfy(ast.firstpos())
+        accepts = []
+        end = endnode()
+        for s,v,d in Dtrans:
+            src = stringfy(s)
+            dest = stringfy(d)
+            print('{} -{}-> {}'.format(src, v, dest))
+            transtable[src][v] = [dest]
+            if (end in d) and (dest not in accepts):
+                accepts.append(dest)
+
+            #g.edge(src, dest, label=via)
+
+        print(dict(transtable))
+        dfa = FA(transtable, start, accepts)
+        dfa.draw()
 
 #
 #

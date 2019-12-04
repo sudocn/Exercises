@@ -1,2 +1,2 @@
-set args -q -i c2.bin
+set args -q -i r3.bin
 break getbuf

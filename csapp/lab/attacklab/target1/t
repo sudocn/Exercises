@@ -1,0 +1,5 @@
+cat c1.txt | ./hex2raw | ./ctarget -q
+cat c2.txt | ./hex2raw | ./ctarget -q
+cat c3.txt | ./hex2raw | ./ctarget -q
+cat r2.txt | ./hex2raw | ./rtarget -q
+cat r3.txt | ./hex2raw | ./rtarget -q

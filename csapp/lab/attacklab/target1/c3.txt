@@ -4,7 +4,7 @@
 41 42 43 44 45 46 47 48 49 50
 a8 dc 61 55 00 00 00 00
 58 /* pop rax */
-bf 78 dc 61 55 
+bf 78 dc 61 55 /* point to cookie str */
 c3 /* ret */
 00 /* padding */
 fa 18 40 00 00 00 00 00 /* address of touch3 */

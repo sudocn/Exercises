@@ -479,6 +479,9 @@ class RegexConverter(object):
                         U |= leaves[p].followpos()
                 print('    U = {}'.format(U))
 
+                if not U:   # dead states
+                    continue
+
                 if (U not in Dstates) and (U not in Dstates_marked):
                     print('  new state {}'.format(U))
                     Dstates.append(U)
@@ -609,12 +612,12 @@ class TCaseDFA(unittest.TestCase):
 
 if __name__ == '__main__':
     import sys
-    re = '(a|b)*abb#' if len(sys.argv) == 1 else sys.argv[1]
+    re = '(a|b)*abb' if len(sys.argv) == 1 else sys.argv[1]
     expr = Regex.parse(re)
     print('ast:{}'.format(expr))
     #draw_graphviz(expr)
 
-    RegexConverter.toDFA('(a|b)*abb')
+    RegexConverter.toDFA(re)
     def printnode(x):
         print("  {} {} {} / {}".format(
             x.name, 

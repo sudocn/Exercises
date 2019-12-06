@@ -74,6 +74,14 @@ class FA(object):
         res = set(v)
         return res - set(EMPTY)
 
+    @property
+    def allstates(self):
+        S = set(self.table.keys())
+        for ok in self.table.keys():
+            for ik in self.table[ok].keys():
+                S |= set(self.table[ok][ik])
+        return S
+
     def draw(self):
         draw_graphviz(self.table, self.start, self.accepts, self.__class__.__name__)
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-from graphviz import Digraph
-from nfa import FA
+from dfa import DFA
 from transtable import cat_table, merge_subtable
 
 class ParseError(Exception):
@@ -505,7 +504,7 @@ class RegexConverter(object):
             #g.edge(src, dest, label=via)
 
         print(dict(transtable))
-        dfa = FA(transtable, start, accepts)
+        dfa = DFA(transtable, start, accepts)
         dfa.draw()
 
 #
@@ -601,6 +600,7 @@ class TCaseRegexConverter(unittest.TestCase):
             dfa.draw()
         except:
             pass
+        dfa.minimize()
 
 class TCaseDFA(unittest.TestCase):
     def test_firstpos(self):

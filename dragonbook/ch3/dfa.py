@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #import yaml
 
+from collections import defaultdict
+
 from nfa import FA, NFA
 from transtable import trans_table
 
@@ -163,6 +165,112 @@ class DFA(FA):
         dfa.helper = helper
         return dfa
 
+    #@classmethod
+    def minimize(self):
+        '''
+        algorithm 3.39
+        Minimize DFA states
+        '''
+        def part_index(state, parts):
+            maps = [ 1 if state in x else 0 for x in parts]
+            return maps.index(1)
+
+        def mtag(state, II):
+            '''
+            Generate a text string tag for partition: the tag contains multplue pairs of 'sym:index' tuplue
+            seprated by comma ','.  sym = symbol in alpabet, index = then value of move(state, sym)'s position
+            in group II. 
+            eg: 'a:A,b:B,c:B'
+            '''
+            tag = ''
+            for sym in sorted(list(self.alphabet)):
+                dest = self.move(state, sym)
+                index = part_index(dest, II)
+                #print('{}:{}({})'.format(sym,index,dest))
+                tag += '{}:{},'.format(sym,index)
+            return tag[:-1]
+            
+        def partition(II):
+            IInew = []
+            for G in II:
+                if len(G) == 1:
+                    print('  partition: + {}'.format(G))
+                    IInew.append(G)
+                    continue
+
+                distribution = {s:mtag(s,II) for s in G}
+                print(distribution)
+                while distribution:
+                    keys = list(distribution.keys())
+                    car,cdr = keys[0],keys[1:]
+                    group = set()
+                    group.add(car)
+                    for k in cdr:
+                        if distribution[k] == distribution[car]:
+                            group.add(k)
+                            distribution.pop(k)
+                    distribution.pop(car)
+                    print('  partition: + {}'.format(group))
+                    IInew.append(group)
+            return IInew
+
+        def part_equal(l1, l2):
+            if len(l1) != len(l2):
+                return False
+            for e in l1:
+                if e not in l2:
+                    return False
+            return True
+
+
+        # initial partition
+        # S - all states
+        # F - accepting states
+        # D - nonaccepting states
+
+        # 1.
+        S = self.allstates
+        F = set(self.accepts)
+        D = S - F
+        II = [F, D]
+        print('F={}, D={}, P={}'.format(F, D, II))
+
+        # 2.
+        IInew = partition(II)
+        print("IInew = ", IInew)
+
+        # 3
+        while not part_equal(II, IInew):
+            II = IInew
+            IInew = partition(II)
+            print("IInew = ", IInew)
+
+        IIfin = IInew
+        # 4.a
+        Dn = [sorted(list(x))[0] for x in IIfin]    # D': the new states
+        print(Dn)
+        id_start = part_index(self.start, IIfin)
+        new_start = Dn[id_start]
+
+        # 4.b
+        new_accepts = set()
+        for ac in self.accepts:
+            new_accepts.add(Dn[part_index(ac, IIfin)])
+
+        print('new_start: {}, new_accepts: {}'.format(new_start, new_accepts))
+
+        # 4.c
+        new_table = defaultdict(dict)
+        for src in Dn:
+            for sym in self.alphabet:
+                id_dest = part_index(self.move(src, sym), IIfin)
+                new_table[src][sym] = [Dn[id_dest]]
+        print('new_table: {}'.format(new_table))
+
+        min_dfa = DFA(dict(new_table), new_start, new_accepts)
+        print("== Minimized DFA ==")
+        print(min_dfa)
+        return min_dfa
 
 import unittest
 from transtable import load_default
@@ -179,8 +287,11 @@ class testDFA(unittest.TestCase):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1:   # t3_21
         nfa = NFA(*load_default(sys.argv[1]))
         dfa = DFA.from_nfa(nfa)
-        dfa.draw()
+        mdfa = dfa.minimize()
+        mdfa.draw()
+        print(mdfa.table)
+        #dfa.draw()
 

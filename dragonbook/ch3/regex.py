@@ -422,7 +422,7 @@ class RegexConverter(object):
     def toDFA_prepare(root):
         impt_states = []
         def addleaf(x):
-            if x.isLeaf():
+            if x.isLeaf() and x.symbol != 'E': # non-empty symols
                 impt_states.append(x)
 
         def calc_followpos(s):
@@ -489,8 +489,9 @@ class RegexConverter(object):
                 print('  new route {} -{}-> {}'.format(S, val, U))
                 Dtrans.append((S, val, U))
         
-        # completed
-        # Draw
+        # algorithm completed here
+
+        # Generate DFA transistion table
         from collections import defaultdict
         transtable = defaultdict(dict)
         start = stringfy(ast.firstpos())

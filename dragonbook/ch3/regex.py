@@ -120,7 +120,7 @@ class Node(object):
     def followpos(self):
         raise Exception('Node: followpos() must be implemented by subclass')
 
-    def nulllable(self):
+    def nullable(self):
         raise Exception('Node: nullable() must be implemented by subclass')
 
     @property
@@ -165,11 +165,11 @@ class AtomNode(Node):
         s,a = self.name+'s',self.name+'a'
         return {'start':s, 'accepts':a, s:{self.symbol:[a]}}
 
-    def nulllable(self):
+    def nullable(self):
         return False if self.symbol != 'E' else True
     
     def firstpos(self):
-        return set() if self.nulllable() else set((self.id,))
+        return set() if self.nullable() else set((self.id,))
 
     def lastpos(self):
         return self.firstpos()
@@ -206,7 +206,7 @@ class StarNode(Node):
     def right(self):
         raise Exception("Start Node has no right child")
 
-    def nulllable(self):
+    def nullable(self):
         return True
     
     def firstpos(self):
@@ -238,17 +238,17 @@ class CatNode(Node):
         print('Term: ', table)
         return table
 
-    def nulllable(self):
-        return self.left.nulllable() and self.right.nulllable()
+    def nullable(self):
+        return self.left.nullable() and self.right.nullable()
 
     def firstpos(self):
-        if self.left.nulllable():
+        if self.left.nullable():
             return self.left.firstpos() | self.right.firstpos()
         else:
             return self.left.firstpos()    
 
     def lastpos(self):
-        if self.right.nulllable():
+        if self.right.nullable():
             return self.left.lastpos() | self.right.lastpos()
         else:
             return self.right.lastpos()    
@@ -282,8 +282,8 @@ class OrNode(Node):
         merge_subtable(table, lt, rt)
         return table
 
-    def nulllable(self):
-        return self.left.nulllable() or self.right.nulllable()
+    def nullable(self):
+        return self.left.nullable() or self.right.nullable()
     
     def firstpos(self):
         return self.left.firstpos() | self.right.firstpos()

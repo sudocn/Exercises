@@ -1,0 +1,251 @@
+State 20 conflicts: 1 shift/reduce
+
+
+Grammar
+
+    0 $accept: prog $end
+
+    1 prog: stmlist
+
+    2 stm: ID ASSIGN ID
+    3    | WHILE ID DO stm
+    4    | BEGIN stmlist END
+    5    | IF ID THEN stm
+    6    | IF ID THEN stm ELSE stm
+
+    7 stmlist: stm
+    8        | stmlist SEMI stm
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+ID (258) 2 3 5 6
+WHILE (259) 3
+BEGIN (260) 4
+END (261) 4
+DO (262) 3
+IF (263) 5 6
+THEN (264) 5 6
+ELSE (265) 6
+SEMI (266) 8
+ASSIGN (267) 2
+
+
+Nonterminals, with rules where they appear
+
+$accept (13)
+    on left: 0
+prog (14)
+    on left: 1, on right: 0
+stm (15)
+    on left: 2 3 4 5 6, on right: 3 5 6 7 8
+stmlist (16)
+    on left: 7 8, on right: 1 4 8
+
+
+state 0
+
+    0 $accept: . prog $end
+
+    ID     shift, and go to state 1
+    WHILE  shift, and go to state 2
+    BEGIN  shift, and go to state 3
+    IF     shift, and go to state 4
+
+    prog     go to state 5
+    stm      go to state 6
+    stmlist  go to state 7
+
+
+state 1
+
+    2 stm: ID . ASSIGN ID
+
+    ASSIGN  shift, and go to state 8
+
+
+state 2
+
+    3 stm: WHILE . ID DO stm
+
+    ID  shift, and go to state 9
+
+
+state 3
+
+    4 stm: BEGIN . stmlist END
+
+    ID     shift, and go to state 1
+    WHILE  shift, and go to state 2
+    BEGIN  shift, and go to state 3
+    IF     shift, and go to state 4
+
+    stm      go to state 6
+    stmlist  go to state 10
+
+
+state 4
+
+    5 stm: IF . ID THEN stm
+    6    | IF . ID THEN stm ELSE stm
+
+    ID  shift, and go to state 11
+
+
+state 5
+
+    0 $accept: prog . $end
+
+    $end  shift, and go to state 12
+
+
+state 6
+
+    7 stmlist: stm .
+
+    $default  reduce using rule 7 (stmlist)
+
+
+state 7
+
+    1 prog: stmlist .
+    8 stmlist: stmlist . SEMI stm
+
+    SEMI  shift, and go to state 13
+
+    $default  reduce using rule 1 (prog)
+
+
+state 8
+
+    2 stm: ID ASSIGN . ID
+
+    ID  shift, and go to state 14
+
+
+state 9
+
+    3 stm: WHILE ID . DO stm
+
+    DO  shift, and go to state 15
+
+
+state 10
+
+    4 stm: BEGIN stmlist . END
+    8 stmlist: stmlist . SEMI stm
+
+    END   shift, and go to state 16
+    SEMI  shift, and go to state 13
+
+
+state 11
+
+    5 stm: IF ID . THEN stm
+    6    | IF ID . THEN stm ELSE stm
+
+    THEN  shift, and go to state 17
+
+
+state 12
+
+    0 $accept: prog $end .
+
+    $default  accept
+
+
+state 13
+
+    8 stmlist: stmlist SEMI . stm
+
+    ID     shift, and go to state 1
+    WHILE  shift, and go to state 2
+    BEGIN  shift, and go to state 3
+    IF     shift, and go to state 4
+
+    stm  go to state 18
+
+
+state 14
+
+    2 stm: ID ASSIGN ID .
+
+    $default  reduce using rule 2 (stm)
+
+
+state 15
+
+    3 stm: WHILE ID DO . stm
+
+    ID     shift, and go to state 1
+    WHILE  shift, and go to state 2
+    BEGIN  shift, and go to state 3
+    IF     shift, and go to state 4
+
+    stm  go to state 19
+
+
+state 16
+
+    4 stm: BEGIN stmlist END .
+
+    $default  reduce using rule 4 (stm)
+
+
+state 17
+
+    5 stm: IF ID THEN . stm
+    6    | IF ID THEN . stm ELSE stm
+
+    ID     shift, and go to state 1
+    WHILE  shift, and go to state 2
+    BEGIN  shift, and go to state 3
+    IF     shift, and go to state 4
+
+    stm  go to state 20
+
+
+state 18
+
+    8 stmlist: stmlist SEMI stm .
+
+    $default  reduce using rule 8 (stmlist)
+
+
+state 19
+
+    3 stm: WHILE ID DO stm .
+
+    $default  reduce using rule 3 (stm)
+
+
+state 20
+
+    5 stm: IF ID THEN stm .
+    6    | IF ID THEN stm . ELSE stm
+
+    ELSE  shift, and go to state 21
+
+    ELSE      [reduce using rule 5 (stm)]
+    $default  reduce using rule 5 (stm)
+
+
+state 21
+
+    6 stm: IF ID THEN stm ELSE . stm
+
+    ID     shift, and go to state 1
+    WHILE  shift, and go to state 2
+    BEGIN  shift, and go to state 3
+    IF     shift, and go to state 4
+
+    stm  go to state 22
+
+
+state 22
+
+    6 stm: IF ID THEN stm ELSE stm .
+
+    $default  reduce using rule 6 (stm)

@@ -29,20 +29,33 @@ void inc_level() { parse_tree_depth++; };
 /*inline*/ 
 void dec_level() { parse_tree_depth--; };
 
+int MAX(int n1, int n2)
+{   
+    return n1 > n2 ? n1 : n2;
+}
+
+typedef struct __table *table_t;
+struct __table {string id; int value; table_t tail;};
+table_t Table(string id, int value, table_t tail) 
+{
+    table_t t = checked_malloc(sizeof(*t)); 
+    t->id=id; 
+    t->value=value; 
+    t->tail=tail; 
+    return t;
+}
+
 /*
 *
 *  END of UTILITY FUNCTIONS
 *  
 */
 
-int maxargs(A_stm stm);
+/* 
+ *   Question 1
+ */
 
-int MAX(int n1, int n2)
-{   
-    return n1 > n2 ? n1 : n2;
-}
-
-/* Question 1 */
+int do_stm(A_stm stm, void *env);
 
 /* max args of an EXP */
 /*
@@ -54,10 +67,9 @@ struct A_exp_ {enum {A_idExp, A_numExp, A_opExp, A_eseqExp} kind;
                    } u;
             };
 */
-int max_exp(A_exp exp)
+int do_exp(A_exp exp, void *env)
 {
-    int max = 0;
-    int n1, n2;
+    int r = 0;
     char opchar[] = {'+','-','*', '/'};
 
     inc_level();
@@ -65,9 +77,8 @@ int max_exp(A_exp exp)
     switch (exp->kind) {
     case A_eseqExp:
         log("exp.eseq\n");
-        n1 = maxargs(exp->u.eseq.stm);
-        n2 = max_exp(exp->u.eseq.exp);
-        max = MAX(n1, n2);
+        do_stm(exp->u.eseq.stm, env);
+        do_exp(exp->u.eseq.exp, env);
         break;
     case A_idExp:
         log("exp.id %s\n", exp->u.id);
@@ -77,17 +88,15 @@ int max_exp(A_exp exp)
         break;
     case A_opExp:
         log("exp.op %c\n", opchar[exp->u.op.oper]);
-        n1 = max_exp(exp->u.op.left);
-        n2 = max_exp(exp->u.op.right);
-        max = MAX(n1, n2);
+        do_exp(exp->u.op.left, env);
+        do_exp(exp->u.op.right, env);
         break;
     default:
         log("ERR: unknown exp\n");
     }
 
-    //log("[max %d]\n", max);
     dec_level();
-    return max;
+    return r;
 }
 
 /*
@@ -97,33 +106,33 @@ struct A_expList_ {enum {A_pairExpList, A_lastExpList} kind;
                          } u;
                   };
 */
-int max_elist(A_expList elist, void *output)
+int do_elist(A_expList elist, void *env)
 {
-    int max, n1, n2;
-    max = 0;
+    int r;
+    r = 0;
 
     inc_level();
 
-    if (output)
-        *((int*)output) += 1;
+    if (env) {
+        *((int*)env) += 1;
+        log("[argc++]\n");
+    }
     switch (elist->kind) {
     case A_pairExpList:
         log("elist.pair\n");
-        n1 = max_exp(elist->u.pair.head);
-        n2 = max_elist(elist->u.pair.tail, output);
-        max = MAX(n1, n2);
+        do_exp(elist->u.pair.head, env);
+        do_elist(elist->u.pair.tail, env);
         break;
     case A_lastExpList:
         log("elist.last\n");
-        max = max_exp(elist->u.last);
+        do_exp(elist->u.last, env);
         break;
     default:
         log("ERR: unknown exp list\n");
     }
 
-    //log("[max %d]\n", max);
     dec_level();
-    return max;
+    return r;
 }
 
 /*
@@ -134,50 +143,78 @@ struct A_stm_ {enum {A_compoundStm, A_assignStm, A_printStm} kind;
                    } u;
             };
 */
-int maxargs(A_stm stm)
+int do_stm(A_stm stm, void *env)
 {
-    int max = 0;
-    int n1, n2;
+    int r = 0;
     
     inc_level();
 
     switch (stm->kind) {
     case A_compoundStm: 
         log("stm.compound ;\n");
-        n1 = maxargs(stm->u.compound.stm1);
-        n2 = maxargs(stm->u.compound.stm2);
-        max = MAX(n1, n2);
+        do_stm(stm->u.compound.stm1, env);
+        do_stm(stm->u.compound.stm2, env);
         break;
     case A_assignStm: 
         log("stm.assign :=\n");
         inc_level();
         log("id %s\n", stm->u.assign.id);
         dec_level();
-        max = max_exp(stm->u.assign.exp);        
+        do_exp(stm->u.assign.exp, env);        
         break;
     case A_printStm: 
         log("stm.print print\n");
         int cnt = 0;
-        max_elist(stm->u.print.exps, (void*)&cnt);
-        max = cnt;
+        do_elist(stm->u.print.exps, (void*)&cnt);
+        log("[print w/ %d args]\n", cnt);
+        ((table_t)env)->tail = Table("print", cnt, ((table_t)env)->tail);
         break;
     default: 
         log("ERR: unkonwn stm\n");
-        max = -1;
+        r = -1;
     } //switch
 
-    //log("[max %d]\n", max);
     dec_level();
+    return r;
+}
+
+int maxargs(A_stm stm)
+{
+    int max = -1;
+    table_t print_li = Table("HDR", 0, NULL);
+    
+    do_stm(stm, (void*)print_li);
+    
+    table_t p = print_li->tail;
+    while (p) {
+        printf("pr %s %d %p\n", p->id, p->value, p->tail);
+        if (p->value > max)
+            max = p->value;
+        p = p->tail;
+    }
     return max;
 }
 
+/* 
+ *   Question 2 
+ */
 
-/* Question 2 */
+void interp_exp(A_exp exp)
+{
+
+}
+
+void interp_stm(A_stm stm)
+{
+
+}
+
 void interp(A_stm stm)
 {
 
 }
 
+/*  Main */
 int main()
 {
     printf("max args: %d\n", maxargs(prog()));

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include "prog1.h"
 
 void log_level(int level, const char* fmt, ...)
@@ -34,6 +35,20 @@ int MAX(int n1, int n2)
     return n1 > n2 ? n1 : n2;
 }
 
+
+/*
+*
+*  END of UTILITY FUNCTIONS
+*  
+*/
+
+
+/*
+*
+*  Common Logic
+*  
+*/
+
 typedef struct __table *table_t;
 struct __table {string id; int value; table_t tail;};
 table_t Table(string id, int value, table_t tail) 
@@ -45,19 +60,54 @@ table_t Table(string id, int value, table_t tail)
     return t;
 }
 
-/*
-*
-*  END of UTILITY FUNCTIONS
-*  
-*/
+typedef int (* action_func_t )(void *);
+typedef struct _action_t {
+    void *opaque;
+    action_func_t action;
+} action_t;
 
-/* 
- *   Question 1
- */
+static struct {
+    action_t stm[3];    // A_compoundStm, A_assignStm, A_printStm
+    action_t exp[4];      // A_idExp, A_numExp, A_opExp, A_eseqExp
+    action_t elist[2];    // A_pairExpList, A_lastExpLists
+    action_t binop[4];    // A_plus,A_minus,A_times,A_div
+} semantic_actions;
+
+void init_actions(void)
+{
+    memset(&semantic_actions, 0, sizeof(semantic_actions));
+}
+enum action_type {ACTION_STM, ACTION_EXP, ACTION_ELIST, ACTION_BINOP} ;
+action_t* get_action(enum action_type at, int at2)
+{
+    action_t *pa = NULL;
+    if (at == ACTION_STM)
+        pa = &semantic_actions.stm[at2];
+    else if (at == ACTION_EXP)
+        pa = &semantic_actions.exp[at2];
+    else if (at == ACTION_ELIST)
+        pa = &semantic_actions.elist[at2];
+    else if (at == ACTION_BINOP)
+        pa = &semantic_actions.binop[at2];
+    else
+        log("ERR: unknown action type");
+
+    return pa;
+}
+
+int add_action(enum action_type at, int at2,  action_t *action)
+{
+    action_t *pa = get_action(at, at2);
+    if (pa) {
+        pa->opaque = action->opaque;
+        pa->action = action->action;
+        return 0;
+    } else
+        return -1;
+}
 
 int do_stm(A_stm stm, void *env);
 
-/* max args of an EXP */
 /*
 struct A_exp_ {enum {A_idExp, A_numExp, A_opExp, A_eseqExp} kind;
              union {string id;
@@ -70,7 +120,16 @@ struct A_exp_ {enum {A_idExp, A_numExp, A_opExp, A_eseqExp} kind;
 int do_exp(A_exp exp, void *env)
 {
     int r = 0;
+    action_t *pact;
     char opchar[] = {'+','-','*', '/'};
+
+    if (exp->kind != A_eseqExp &&
+        exp->kind != A_idExp &&
+        exp->kind != A_numExp &&
+        exp->kind != A_opExp) {
+        log("ERR: unknown exp\n");
+        return -1;
+    }
 
     inc_level();
 
@@ -91,9 +150,11 @@ int do_exp(A_exp exp, void *env)
         do_exp(exp->u.op.left, env);
         do_exp(exp->u.op.right, env);
         break;
-    default:
-        log("ERR: unknown exp\n");
     }
+
+    pact = get_action(ACTION_EXP, (int)exp->kind);
+    if (pact && pact->action)
+        pact->action(env);
 
     dec_level();
     return r;
@@ -110,13 +171,16 @@ int do_elist(A_expList elist, void *env)
 {
     int r;
     r = 0;
+    
+    if (elist->kind != A_pairExpList && 
+        elist->kind != A_lastExpList) {
+        log("ERR: unknown exp list\n");
+        return -1;
+    }
 
     inc_level();
 
-    if (env) {
-        *((int*)env) += 1;
-        log("[argc++]\n");
-    }
+
     switch (elist->kind) {
     case A_pairExpList:
         log("elist.pair\n");
@@ -127,9 +191,11 @@ int do_elist(A_expList elist, void *env)
         log("elist.last\n");
         do_exp(elist->u.last, env);
         break;
-    default:
-        log("ERR: unknown exp list\n");
     }
+
+    action_t *pact = get_action(ACTION_ELIST, (int)elist->kind);
+    if (pact && pact->action)
+        pact->action(env);
 
     dec_level();
     return r;
@@ -146,6 +212,13 @@ struct A_stm_ {enum {A_compoundStm, A_assignStm, A_printStm} kind;
 int do_stm(A_stm stm, void *env)
 {
     int r = 0;
+    
+    if (stm->kind != A_compoundStm && 
+        stm->kind != A_assignStm &&
+        stm->kind != A_printStm) {
+        log("ERR: unknown stm\n");
+        return -1;
+    }
     
     inc_level();
 
@@ -178,10 +251,27 @@ int do_stm(A_stm stm, void *env)
     return r;
 }
 
+
+/* 
+ *   Question 1
+ */
+
+int inc_para_count(void *env){
+    if (env) {
+        *((int*)env) += 1;
+        log("[argc++]\n");
+    }
+    return 0;
+}
+
 int maxargs(A_stm stm)
 {
     int max = -1;
     table_t print_li = Table("HDR", 0, NULL);
+    action_t elist_act = {NULL, inc_para_count};
+
+    add_action(ACTION_ELIST, A_pairExpList, &elist_act);
+    add_action(ACTION_ELIST, A_lastExpList, &elist_act);
     
     do_stm(stm, (void*)print_li);
     

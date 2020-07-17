@@ -12,6 +12,7 @@ void *checked_malloc(int len)
     fprintf(stderr,"\nRan out of memory!\n");
     exit(1);
  }
+ memset(p, 0, len);
  return p;
 }
 

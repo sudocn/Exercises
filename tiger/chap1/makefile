@@ -1,17 +1,17 @@
-a.out: main.o prog1.o slp.o util.o
-	cc -g main.o prog1.o slp.o util.o
+CFLAGS := -I. -g
+H_FILES := slp.h util.h table.h log.h
+a.out: log.o table.o main.o prog1.o slp.o util.o 
+	cc -g $^ 
 
-main.o: main.c slp.h util.h
-	cc -g -c main.c
+main.o: ${H_FILES}
+log.o: log.h list.h
+table.o: table.h util.h
+prog1.o: slp.h util.h
+slp.o: slp.h util.h
+util.o:  util.h
 
-prog1.o: prog1.c slp.h util.h
-	cc -g -c prog1.c
-
-slp.o: slp.c slp.h util.h
-	cc -g -c slp.c
-
-util.o: util.c util.h
-	cc -g -c util.c
+%.o: %.c
+	cc ${CFLAGS} -c $< 
 
 clean: 
 	rm -f a.out util.o prog1.o slp.o main.o

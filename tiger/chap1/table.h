@@ -2,6 +2,7 @@
 #define _TABLE_H_
 
 #include "util.h"
+#include "log.h"
 #include "list.h"
 
 typedef struct __table *table_t;
@@ -30,10 +31,20 @@ static inline table_t lookup(string token, table_t table)
 {
     table_t t;
     list_for_each_entry(t, &table->list, list) {
+        log("id %s, v %d\n", t->id, t->value);
         if (!strcmp(t->id, token)) {
             return t;
         }
     }
     return (table_t) NULL;
+}
+
+static inline void table_dump(table_t table)
+{
+    table_t t;
+    log("== dump table %s == \n", table->id);
+    list_for_each_entry(t, &table->list, list) {
+        log("id %s, v %d\n", t->id, t->value);
+    }
 }
 #endif /* _TABLE_H_ */

@@ -23,19 +23,9 @@ int MAX(int n1, int n2)
 *  
 */
 
-typedef struct {
-    struct list_head list;
-    union {
-        int i;
-        void *p;
-    };
-} item_t;
-
-item_t *Item()
-{
-    item_t *p = checked_malloc(sizeof(item_t));
-    return p;
-}
+table_t global_table;
+#define INIT_ENV()    {global_table = Table("HEAD", 0); INIT_LIST_HEAD(&global_table->list);}
+#define LOOKUP(id)      lookup(id, global_table)
 
 enum action_time { ACTION_TIME_PRE, ACTION_TIME_POST, ACTION_TIME_MED};
 typedef int (* action_func_t )(table_t, enum action_time);
@@ -56,26 +46,26 @@ void init_actions(void)
     memset(&semantic_actions, 0, sizeof(semantic_actions));
 }
 enum action_type {ACTION_STM, ACTION_EXP, ACTION_ELIST, ACTION_BINOP} ;
-action_t* get_action(enum action_type at, int at2)
+action_t* get_action(enum action_type at, int sub_type)
 {
     action_t *pa = NULL;
     if (at == ACTION_STM)
-        pa = &semantic_actions.stm[at2];
+        pa = &semantic_actions.stm[sub_type];
     else if (at == ACTION_EXP)
-        pa = &semantic_actions.exp[at2];
+        pa = &semantic_actions.exp[sub_type];
     else if (at == ACTION_ELIST)
-        pa = &semantic_actions.elist[at2];
+        pa = &semantic_actions.elist[sub_type];
     else if (at == ACTION_BINOP)
-        pa = &semantic_actions.binop[at2];
+        pa = &semantic_actions.binop[sub_type];
     else
         log("ERR: unknown action type");
 
     return pa;
 }
 
-int set_action(enum action_type at, int at2,  action_t *action)
+int set_action(enum action_type at, int sub_type,  action_t *action)
 {
-    action_t *pa = get_action(at, at2);
+    action_t *pa = get_action(at, sub_type);
     if (pa) {
         pa->opaque = action->opaque;
         pa->action = action->action;
@@ -84,11 +74,29 @@ int set_action(enum action_type at, int at2,  action_t *action)
         return -1;
 }
 
-void clr_action(enum action_type at, int at2)
+void clr_action(enum action_type at, int sub_type)
 {
     action_t act = {NULL, NULL};
-    set_action(at, at2, &act);
+    set_action(at, sub_type, &act);
 }
+
+#define _TRIGGER_ACT(type, sub_type, env, act_time) \
+do { \
+    action_t *pact = get_action(type, (int)sub_type); \
+    if (pact && pact->action) \
+        pact->action(env, act_time); \
+} while (0)
+
+#define TRIGGER_PRE_ACT(type, sub_type, env) _TRIGGER_ACT(type, sub_type, env, ACTION_TIME_PRE)
+#define TRIGGER_POST_ACT(type, sub_type, env) _TRIGGER_ACT(type, sub_type, env, ACTION_TIME_POST)
+
+/*
+ *
+ * 
+ * 
+ * 
+ * 
+ */
 
 
 int do_stm(A_stm stm, table_t env);
@@ -117,6 +125,7 @@ int do_exp(A_exp exp, table_t env)
     }
 
     inc_level();
+    TRIGGER_PRE_ACT(ACTION_EXP, exp->kind, env);
 
     switch (exp->kind) {
     case A_eseqExp:
@@ -137,10 +146,7 @@ int do_exp(A_exp exp, table_t env)
         break;
     }
 
-    pact = get_action(ACTION_EXP, (int)exp->kind);
-    if (pact && pact->action)
-        pact->action(env, ACTION_TIME_POST);
-
+    TRIGGER_POST_ACT(ACTION_EXP, exp->kind, env);
     dec_level();
     return r;
 }
@@ -164,7 +170,7 @@ int do_elist(A_expList elist, table_t env)
     }
 
     inc_level();
-
+    TRIGGER_PRE_ACT(ACTION_ELIST, elist->kind, env);
 
     switch (elist->kind) {
     case A_pairExpList:
@@ -178,10 +184,7 @@ int do_elist(A_expList elist, table_t env)
         break;
     }
 
-    action_t *pact = get_action(ACTION_ELIST, (int)elist->kind);
-    if (pact && pact->action)
-        pact->action(env, ACTION_TIME_POST);
-
+    TRIGGER_POST_ACT(ACTION_ELIST, elist->kind, env);
     dec_level();
     return r;
 }
@@ -207,10 +210,7 @@ int do_stm(A_stm stm, table_t env)
     
     inc_level();
 
-    action_t *pact = get_action(ACTION_ELIST, (int)stm->kind);
-    item_t *it = Item();
-    if (pact && pact->action)
-        pact->action((void*)it, ACTION_TIME_PRE);
+    TRIGGER_PRE_ACT(ACTION_STM, (int)stm->kind, env);
 
     switch (stm->kind) {
     case A_compoundStm: 
@@ -227,16 +227,14 @@ int do_stm(A_stm stm, table_t env)
         break;
     case A_printStm: 
         log("stm.print print\n");
-        //do_elist(stm->u.print.exps, (void*)&cnt);
+        do_elist(stm->u.print.exps, env);
         break;
     default: 
         log("ERR: unkonwn stm\n");
         r = -1;
     } //switch
 
-    if (pact && pact->action)
-        pact->action((void*)it, ACTION_TIME_POST);
-
+    TRIGGER_POST_ACT(ACTION_STM, stm->kind, env);
     dec_level();
     return r;
 }
@@ -248,30 +246,33 @@ int do_stm(A_stm stm, table_t env)
 
 int action_print_stm(table_t env, enum action_time time) 
 {
+    log("[%s:%d - %s]\n", __FUNCTION__, __LINE__, time==ACTION_TIME_PRE?"pre":"post");
     if (!env)
         return 0;
     
     if (time == ACTION_TIME_PRE) {
-        log("[action print - pre]");
-        ((item_t*)env)->i = 0;
+        table_add(Table(String("__print_args"), 0), env);
     } else if (time == ACTION_TIME_POST) {
-        int cnt;
-        log("[action print - post]");
-        log("[print w/ %d args]\n", cnt);
-        table_t t = Table("print", cnt);
+        table_t t = LOOKUP("__print_args");
+        log("[print w/ %d args]\n", t->value);
         //list_add(&t->list, (struct list_head *)env);
     }
     return 0;
 }
-int action_inc_para_count(table_t env, enum action_time time){
+
+int action_elist(table_t env, enum action_time time){
+    log("[%s:%d - %s]\n", __FUNCTION__, __LINE__, time==ACTION_TIME_PRE?"pre":"post");
     if (!env)
         return 0;
 
     if (time == ACTION_TIME_PRE) {
 
     } else if (time == ACTION_TIME_POST) {
-        *((int*)env) += 1;
-        log("[argc++]\n");
+        table_t t = LOOKUP("__print_args");
+        if (t) {
+            t->value += 1;
+            log("[argc++]\n");
+        }
     } 
     return 0;
 }
@@ -280,15 +281,18 @@ int maxargs(A_stm stm)
 {
     int max = -1;
     LIST_HEAD(print_li); // = Table("HDR", 0, NULL);
-    action_t elist_act = {NULL, action_inc_para_count};
+    action_t elist_act = {NULL, action_elist};
 
     set_action(ACTION_ELIST, A_pairExpList, &elist_act);
     set_action(ACTION_ELIST, A_lastExpList, &elist_act);
+
+    action_t prt_act = {NULL, action_print_stm};
+    set_action(ACTION_STM, A_printStm, &prt_act);
     
-    do_stm(stm, (void*)&print_li);
+    do_stm(stm, global_table);
     
     table_t p;
-    list_for_each_entry(p, &print_li, list) {
+    list_for_each_entry(p, &global_table->list, list) {
         printf("pr %s %d\n", p->id, p->value);
         if (p->value > max)
             max = p->value;
@@ -336,7 +340,14 @@ int main()
     }
     */
 
+    INIT_ENV();
+    printf("global_table %p\n", global_table);
+    table_t t = LOOKUP("HEAD");
+    if (t)
+        printf("%s %d\n", t->id, t->value);
+
     printf("max args: %d\n", maxargs(prog()));
 
+    table_dump(global_table);
     return 0;
 }

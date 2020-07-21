@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "tree.h"
-#include "log.h"
 #include "table.h"
 #include "prog1.h"
 
+//#define DEBUG
+#include "log.h"
 /*
 *
 *  UTILITY FUNCTIONS
@@ -246,7 +247,7 @@ int do_stm(A_stm stm, table_t env)
 
 int action_print_stm(table_t env, enum action_time time) 
 {
-    log("[%s:%d - %s]\n", __FUNCTION__, __LINE__, time==ACTION_TIME_PRE?"pre":"post");
+    debug("[%s:%d - %s]\n", __FUNCTION__, __LINE__, time==ACTION_TIME_PRE?"pre":"post");
     if (!env)
         return 0;
     
@@ -254,14 +255,14 @@ int action_print_stm(table_t env, enum action_time time)
         table_add(Table(String("__print_args"), 0), env);
     } else if (time == ACTION_TIME_POST) {
         table_t t = LOOKUP("__print_args");
-        log("[print w/ %d args]\n", t->value);
+        debug("[print w/ %d args]\n", t->value);
         //list_add(&t->list, (struct list_head *)env);
     }
     return 0;
 }
 
 int action_elist(table_t env, enum action_time time){
-    log("[%s:%d - %s]\n", __FUNCTION__, __LINE__, time==ACTION_TIME_PRE?"pre":"post");
+    debug("[%s:%d - %s]\n", __FUNCTION__, __LINE__, time==ACTION_TIME_PRE?"pre":"post");
     if (!env)
         return 0;
 
@@ -271,7 +272,7 @@ int action_elist(table_t env, enum action_time time){
         table_t t = LOOKUP("__print_args");
         if (t) {
             t->value += 1;
-            log("[argc++]\n");
+            debug("[argc++]\n");
         }
     } 
     return 0;
@@ -293,7 +294,7 @@ int maxargs(A_stm stm)
     
     table_t p;
     list_for_each_entry(p, &global_table->list, list) {
-        printf("pr %s %d\n", p->id, p->value);
+        debug("pr %s %d\n", p->id, p->value);
         if (p->value > max)
             max = p->value;
     }

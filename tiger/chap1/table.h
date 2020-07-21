@@ -31,7 +31,7 @@ static inline table_t lookup(string token, table_t table)
 {
     table_t t;
     list_for_each_entry(t, &table->list, list) {
-        log("id %s, v %d\n", t->id, t->value);
+        debug("id %s, v %d\n", t->id, t->value);
         if (!strcmp(t->id, token)) {
             return t;
         }

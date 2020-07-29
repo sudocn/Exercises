@@ -21,13 +21,17 @@ void adjust(void)
 
 %}
 
+%x COMMENT
+
 %%
-[ \t]+	 {adjust(); continue;}
-"\*".*"*/" {adjust(); continue;} /* comments */
-\n	 {adjust(); EM_newline(); continue;}
+[ \t]+	 {adjust();}
+"/*"     {adjust(); BEGIN COMMENT;}
+<COMMENT>"*/" {adjust(); BEGIN INITIAL;} /* comments */
+<COMMENT>. {adjust();}    
+\n	 {adjust(); EM_newline();}
 ","	 {adjust(); return COMMA;}	/* PUNCTUATIONS */
 ":"  {adjust(); return COLON;}
-";"  {adjust(); return SEMICOLON;}
+";"  {adjust(); return SEMICOLON+100;}
 "("  {adjust(); return LPAREN;}
 ")"  {adjust(); return RPAREN;}
 "["  {adjust(); return LBRACK;}
@@ -48,7 +52,6 @@ void adjust(void)
 "&"  {adjust(); return AND;}
 "|"  {adjust(); return OR;}
 ":=" {adjust(); return ASSIGN;}
-<<EOF>> {adjust();EM_error(EM_tokPos, "-end of file-"); yyterminate();}
 array  	 {adjust(); return ARRAY;} /* KEYWORDS */
 if  	 {adjust(); return IF;}
 then   {adjust(); return THEN;}

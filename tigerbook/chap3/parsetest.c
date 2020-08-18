@@ -3,12 +3,12 @@
 #include "errormsg.h"
 
 extern int yyparse(void);
-
+extern char *yytext;
 void parse(string fname) 
 {EM_reset(fname);
  if (yyparse() == 0) /* parsing worked */
    fprintf(stderr,"Parsing successful!\n");
- else fprintf(stderr,"Parsing failed\n");
+ else fprintf(stderr,"Parsing failed: %s\n", yytext);
 }
 
 

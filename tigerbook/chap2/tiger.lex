@@ -31,7 +31,7 @@ void adjust(void)
 \n	 {adjust(); EM_newline();}
 ","	 {adjust(); return COMMA;}	/* PUNCTUATIONS */
 ":"  {adjust(); return COLON;}
-";"  {adjust(); return SEMICOLON+100;}
+";"  {adjust(); return SEMICOLON;}
 "("  {adjust(); return LPAREN;}
 ")"  {adjust(); return RPAREN;}
 "["  {adjust(); return LBRACK;}

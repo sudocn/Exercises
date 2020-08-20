@@ -48,20 +48,19 @@ dec: tydec
     | vardec
     | fundec
 
-tydec: TYPE type_id EQ ty
-ty: type_id
+tydec: TYPE ID EQ ty
+ty: ID
     | LBRACE tyfields RBRACE
-	| ARRAY OF type_id
+	| ARRAY OF ID
 tyfields: 
-    | ID COLON type_id
-    |  ID COLON type_id COMMA tyfields
-type_id: ID
+    | ID COLON ID
+    |  ID COLON ID COMMA tyfields
 
 vardec: VAR ID ASSIGN exp
-    | VAR ID COLON type_id ASSIGN exp
+    | VAR ID COLON ID ASSIGN exp
 
 fundec: FUNCTION ID LPAREN tyfields RPAREN EQ exp
-    | FUNCTION ID LPAREN tyfields RPAREN COLON type_id EQ exp
+    | FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp
 
 exp: 
     | lvalue
@@ -82,8 +81,7 @@ exp:
     | for_exp
     | BREAK
     | LET decs IN explist END
-    | LPAREN exp RPAREN
-
+ 
 lvalue: ID
     | lvalue DOT ID
     | lvalue LBRACK exp RBRACK
@@ -103,14 +101,15 @@ comp_op: EQ | NEQ | LT | LE | GT | GE
 boolop_exp: exp AND exp
     | exp OR exp
 
-rec_exp: type_id NIL
-    | type_id LBRACE rec_list RBRACE
+rec_exp: ID NIL
+    | ID LBRACE rec_list RBRACE
 rec_list: 
     | rec_item
     | rec_item COMMA rec_list
 rec_item: ID EQ exp
 
-arr_exp: type_id LBRACK exp RBRACK OF exp
+arr_exp: ID LBRACK exp RBRACK OF exp
+//arr_elem: ID | INT | STRING
 
 assign_exp: lvalue ASSIGN exp
 

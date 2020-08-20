@@ -108,8 +108,7 @@ rec_list:
     | rec_item COMMA rec_list
 rec_item: ID EQ exp
 
-arr_exp: ID LBRACK exp RBRACK OF exp
-//arr_elem: ID | INT | STRING
+arr_exp: lvalue LBRACK exp RBRACK OF exp
 
 assign_exp: lvalue ASSIGN exp
 

@@ -1,0 +1,19 @@
+function loop()
+{
+    for i in ../testcases/*.tig
+    do
+        #echo $i
+        ./a.out $i 2>&1  > /dev/null | grep -v 'Parsing successful!'
+    done
+}
+
+if [ $# -eq 0 ]
+then
+    loop
+else
+ for i in $*
+ do
+  echo test$1.tig
+  ./a.out ../testcases/test$i.tig
+ done
+fi

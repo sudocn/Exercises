@@ -1,0 +1,6 @@
+.vscode/
+a.out
+lex.yy.c
+y.tab.[ch]
+y.output
+chap2/lextest

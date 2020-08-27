@@ -1,0 +1,7 @@
+*.lex.c
+*.tab.[ch]
+*.output
+lex.yy.c
+a.out
+fb3-1
+fb1-5

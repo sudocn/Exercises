@@ -93,8 +93,10 @@ void yyerror(char *s, ...)
     fprintf(stderr, "\n");
 }
 
+extern int yydebug;
 int main()
 {
+    yydebug =1;
     printf("> ");
     return yyparse();
 }

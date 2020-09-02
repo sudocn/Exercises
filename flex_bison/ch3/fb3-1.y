@@ -2,7 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "fb3-1.h"
+#define YYDEBUG 1
+//#define YYERROR_VERBOSE 1
 %}
+
 
 %union {
     struct ast *a;
@@ -12,7 +15,11 @@
 %token <d> NUMBER
 %token EOL
 
-%type <a> exp factor term
+%left '+' '-'
+%left '*' '/'
+%nonassoc '|' UMINUS
+%type <a> exp
+//%type <a> exp factor term
 
 %%
 calclist:
@@ -23,6 +30,16 @@ calclist:
     }
     | calclist EOL { printf("> "); }
 
+exp:exp '+' exp { $$ = newast('+', $1, $3); }
+    | exp '-' exp { $$ = newast('-', $1, $3); }
+    | exp '*' exp { $$ = newast('*', $1, $3); }
+    | exp '/' exp { $$ = newast('/', $1, $3); }
+    | '|' exp     { $$ = newast('|', $2, NULL); }
+    | '(' exp ')' { $$ = $2; }
+    | '-' exp  %prec UMINUS   { $$ = newast('M', $2, NULL); }
+    | NUMBER      { $$ = newnum($1); }
+
+/*
 exp: factor
     | exp '+' factor { $$ = newast('+', $1, $3); }
     | exp '-' factor { $$ = newast('-', $1, $3); }
@@ -35,4 +52,5 @@ term: NUMBER    { $$ = newnum($1); }
     | '|' term { $$ = newast('|', $2, NULL); }
     | '(' exp ')' { $$ = $2; }
     | '-' term { $$ = newast('M', $2, NULL); }
+*/
 %%

@@ -24,23 +24,19 @@ void yyerror(char *s)
 
 %token <sval> ID STRING
 %token <ival> INT
-
-%token 
-  COMMA COLON SEMICOLON LPAREN RPAREN LBRACK RBRACK 
-  LBRACE RBRACE DOT 
-  PLUS MINUS TIMES DIVIDE EQ NEQ LT LE GT GE UMINUS
-  AND OR ASSIGN
+%token   
+  EQ NEQ LT LE GT GE UMINUS
+  ASSIGN
   ARRAY IF THEN ELSE WHILE FOR TO DO LET IN END OF 
   BREAK NIL
   FUNCTION VAR TYPE 
 
-%start program
-
 %nonassoc EQ NEQ
-%left PLUS MINUS
-%left TIMES DIVIDE
+%left '+' '-'
+%left '*' '/'
 %left UMINUS
 
+%start program
 %%
 
 program: exp
@@ -54,21 +50,21 @@ dec: tydec
 
 tydec: TYPE ID EQ ty
 ty: ID
-    | LBRACE tyfields RBRACE
+    | '{' tyfields '}'
 	| ARRAY OF ID
 tyfields: 
-    | ID COLON ID
-    |  ID COLON ID COMMA tyfields
+    | ID ':' ID
+    |  ID ':' ID ',' tyfields
 
 vardec: VAR ID ASSIGN exp
-    | VAR ID COLON ID ASSIGN exp
+    | VAR ID ':' ID ASSIGN exp
 
-fundec: FUNCTION ID LPAREN tyfields RPAREN EQ exp
-    | FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp
+fundec: FUNCTION ID '(' tyfields ')' EQ exp
+    | FUNCTION ID '(' tyfields ')' ':' ID EQ exp
 
 exp: 
     | lvalue
-    | LPAREN explist RPAREN
+    | '(' explist ')'
     | INT
     | NIL
     | STRING
@@ -87,32 +83,32 @@ exp:
     | LET decs IN explist END
  
 lvalue: ID
-    | lvalue DOT ID
-    | lvalue LBRACK exp RBRACK
+    | lvalue '.' ID
+    | lvalue '[' exp ']'
 
-arith_exp: exp PLUS exp
-    | exp MINUS exp
-    | exp TIMES exp
-    | exp DIVIDE exp
-    | MINUS exp %prec UMINUS
+arith_exp: exp '+' exp
+    | exp '-' exp
+    | exp '*' exp
+    | exp '/' exp
+    | '-' exp %prec UMINUS
 
-funcall_exp: ID LPAREN arglist RPAREN
+funcall_exp: ID '(' arglist ')'
 
 comp_exp: exp comp_op exp
 strcomp_exp: STRING comp_op STRING
 comp_op: EQ | NEQ | LT | LE | GT | GE
 
-boolop_exp: exp AND exp
-    | exp OR exp
+boolop_exp: exp '&' exp
+    | exp '|' exp
 
 rec_exp: ID NIL
-    | ID LBRACE rec_list RBRACE
+    | ID '{' rec_list '}'
 rec_list: 
     | rec_item
-    | rec_item COMMA rec_list
+    | rec_item ',' rec_list
 rec_item: ID EQ exp
 
-arr_exp: lvalue LBRACK exp RBRACK OF exp
+arr_exp: lvalue '[' exp ']' OF exp
 
 assign_exp: lvalue ASSIGN exp
 
@@ -124,9 +120,9 @@ while_exp: WHILE exp DO exp
 for_exp: FOR ID ASSIGN exp TO exp DO exp
 
 explist: exp 
-    |exp SEMICOLON explist
+    |exp ';' explist
 arglist: exp
-    | exp COMMA arglist
+    | exp ',' arglist
 
 
 

@@ -10,6 +10,7 @@ function loop()
 if [ $# -eq 0 ]
 then
     loop
+    echo "done"
 else
  for i in $*
  do

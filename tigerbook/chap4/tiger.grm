@@ -31,7 +31,9 @@ void yyerror(char *s)
   BREAK NIL
   FUNCTION VAR TYPE 
 
-%nonassoc EQ NEQ
+%nonassoc EQ NEQ LT LE GT GE
+%left '|'
+%left '&'
 %left '+' '-'
 %left '*' '/'
 %left UMINUS
@@ -39,7 +41,8 @@ void yyerror(char *s)
 %start program
 %%
 
-program: exp
+program: 
+    | exp
 
 decs: 
     | dec decs 
@@ -62,8 +65,7 @@ vardec: VAR ID ASSIGN exp
 fundec: FUNCTION ID '(' tyfields ')' EQ exp
     | FUNCTION ID '(' tyfields ')' ':' ID EQ exp
 
-exp: 
-    | lvalue
+exp: lvalue
     | '(' explist ')'
     | INT
     | NIL
@@ -71,7 +73,6 @@ exp:
     | funcall_exp
     | arith_exp
     | comp_exp
-    | strcomp_exp
     | boolop_exp
     | rec_exp
     | arr_exp
@@ -95,7 +96,7 @@ arith_exp: exp '+' exp
 funcall_exp: ID '(' arglist ')'
 
 comp_exp: exp comp_op exp
-strcomp_exp: STRING comp_op STRING
+/* strcomp_exp: STRING comp_op STRING */
 comp_op: EQ | NEQ | LT | LE | GT | GE
 
 boolop_exp: exp '&' exp
@@ -119,9 +120,11 @@ while_exp: WHILE exp DO exp
 
 for_exp: FOR ID ASSIGN exp TO exp DO exp
 
-explist: exp 
-    |exp ';' explist
-arglist: exp
+explist: 
+    | exp 
+    | exp ';' explist
+arglist: 
+    | exp
     | exp ',' arglist
 
 

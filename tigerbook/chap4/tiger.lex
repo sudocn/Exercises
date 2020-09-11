@@ -1,8 +1,10 @@
 %{
 #include <string.h>
 #include "util.h"
-#include "tokens.h"
 #include "errormsg.h"
+#include "symbol.h"
+#include "absyn.h"
+#include "tokens.h"
 
 int charPos=1;
 
@@ -17,6 +19,7 @@ void adjust(void)
 {
  EM_tokPos=charPos;
  charPos+=yyleng;
+ yylval.pos = charPos;
 }
 
 %}

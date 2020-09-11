@@ -6,7 +6,7 @@
  *  each module should make "wrapper" functions that take
  *  well-typed arguments and call the TAB_ functions.
  */
-
+#pragma once
 typedef struct TAB_table_ *TAB_table;
 
 /* Make a new table mapping "keys" to "values". */

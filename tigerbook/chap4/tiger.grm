@@ -20,6 +20,11 @@ void yyerror(char *s)
 	int pos;
 	int ival;
 	string sval;
+    struct A_var_ avar;
+    A_exp aexp;
+    A_dec adec;
+    A_ty  aty;
+
 	}
 
 %token <sval> ID STRING
@@ -30,6 +35,11 @@ void yyerror(char *s)
   ARRAY IF THEN ELSE WHILE FOR TO DO LET IN END OF 
   BREAK NIL
   FUNCTION VAR TYPE 
+
+%type <avar> vardec
+%type <aexp> exp
+%type <adec> dec
+%type <aty>  ty
 
 %nonassoc EQ NEQ LT LE GT GE
 %left '|'
@@ -52,24 +62,24 @@ dec: tydec
     | fundec
 
 tydec: TYPE ID EQ ty
-ty: ID
-    | '{' tyfields '}'
-	| ARRAY OF ID
-tyfields: 
-    | ID ':' ID
-    |  ID ':' ID ',' tyfields
+ty: ID  { $$ = A_NameTy(EM_tokPos, $1); }
+    | '{' field_list '}' { $$ = A_RecordTy(EM_tokPos, $2); }
+	| ARRAY OF ID { $$ = A_ArrayTy(EM_tokPos, $3); }
+field_list: 
+    | ID ':' ID //{ $$ = A_FieldList(EM_tokPos)}
+    | ID ':' ID ',' field_list
 
 vardec: VAR ID ASSIGN exp
     | VAR ID ':' ID ASSIGN exp
 
-fundec: FUNCTION ID '(' tyfields ')' EQ exp
-    | FUNCTION ID '(' tyfields ')' ':' ID EQ exp
+fundec: FUNCTION ID '(' field_list ')' EQ exp
+    | FUNCTION ID '(' field_list ')' ':' ID EQ exp
 
 exp: lvalue
-    | '(' explist ')'
+    | '(' exp_list ')'
     | INT
     | NIL
-    | STRING
+    | STRING { fprintf(stderr, "hello");}
     | funcall_exp
     | arith_exp
     | comp_exp
@@ -80,8 +90,8 @@ exp: lvalue
     | if_exp
     | while_exp
     | for_exp
-    | BREAK
-    | LET decs IN explist END
+    | BREAK 
+    | LET decs IN exp_list END
  
 lvalue: ID
     | lvalue '.' ID
@@ -93,7 +103,7 @@ arith_exp: exp '+' exp
     | exp '/' exp
     | '-' exp %prec UMINUS
 
-funcall_exp: ID '(' arglist ')'
+funcall_exp: ID '(' arg_list ')'
 
 comp_exp: exp comp_op exp
 /* strcomp_exp: STRING comp_op STRING */
@@ -120,12 +130,12 @@ while_exp: WHILE exp DO exp
 
 for_exp: FOR ID ASSIGN exp TO exp DO exp
 
-explist: 
+exp_list: 
     | exp 
-    | exp ';' explist
-arglist: 
+    | exp ';' exp_list
+arg_list: 
     | exp
-    | exp ',' arglist
+    | exp ',' arg_list
 
 
 
